@@ -30,8 +30,21 @@
  void process_commands();
  void get_command();
 
+ float code_value();
+ long code_value_long();
+ unsigned char code_seen_str(char code_string[]);
+ unsigned char code_seen(char code);
+ 
 
  extern unsigned char buflen;
  extern unsigned char bufindr;
  extern unsigned char bufindw;
+ extern unsigned char relative_mode;
+ extern volatile int feedmultiply;
+ extern int saved_feedmultiply;
+ extern volatile char feedmultiplychanged;
+ extern volatile int extrudemultiply;
+ extern unsigned long previous_millis_cmd;
+ extern unsigned long max_inactive_time;
+ extern unsigned long stepper_inactive_time;
 

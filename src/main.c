@@ -10,8 +10,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+<<<<<<< HEAD
 #include "usb.h"
 #include "sdcard.h"
+=======
+>>>>>>> Include Planner and old USB UART
 #include "serial.h"
 #include "samadc.h"
 #include "com_interpreter.h"
@@ -34,6 +37,7 @@ extern void motor_unstep();
 extern void heaters_setup();
 extern void manage_heaters(void);
 extern void heater_soft_pwm(void);
+extern void ConfigureTc_1(void);
 
 
 //extern void sprinter_mainloop();
@@ -99,7 +103,7 @@ void SysTick_Handler(void)
     if(timestamp%2000==0)
     {
 	    //printf("Temp 0 / 1: %u mV / %u mV \n", adc_read(5), adc_read(3));
-		usb_handle_state();
+
     }
     
     if(timestamp%5==0) //every 5 ms
@@ -157,34 +161,49 @@ int main()
 
     // If they are present, configure Vbus & Wake-up pins
     //PIO_InitializeInterrupts(0);
-    printf("Configuring systick.\n\r");
+    
     //ConfigureTc();//this is just an example - uncomment it later
+	
 
     //-------- Init UART --------------
+	printf("USB Seriel INIT\n\r");
 	samserial_init();
 	
+<<<<<<< HEAD
 	//------- Init USB ----------------
 	usb_init();
 //	usb_mount_sdcard();
 	sdcard_mount();
 	
+=======
+>>>>>>> Include Planner and old USB UART
 	//-------- Init ADC without Autostart --------------
+	printf("Init ADC\n\r");
     initadc(0);
 	
 	//-------- On USB recived byte call this function --------------
     samserial_setcallback(&usb_characterhandler);
 	
 	//-------- Init Motor driver --------------
+	printf("Init Motors\n\r");
     motor_setup();
 	
 	//-------- Init Heater I/O  --------------
+	printf("Init Heaters\n\r");
     heaters_setup();
 	
     //uncomment to use//sprinter_setup();
 	
     //-------- Start SYSTICK (1ms) --------------
+	printf("Configuring systick.\n\r");
 	SysTick_Configure(1, BOARD_MCK/1000, SysTick_Handler);
+	
+	//-------- Timer 1 for heater PWM --------------
+	printf("Configuring Timer 1.\n\r");
+	//ConfigureTc_1();
 
+	plan_init();
+	
 
     //motor_enaxis(0,1);
     //motor_enaxis(1,1);
