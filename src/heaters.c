@@ -20,6 +20,10 @@
 #include <pio/pio.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <irq/irq.h>
+#include <tc/tc.h>
+
+
 #include "samadc.h"
 #include "heaters.h"
 #include "thermistortables.h"
@@ -40,6 +44,7 @@ const Pin AUX2={1 <<  24, AT91C_BASE_PIOA, AT91C_ID_PIOA, PIO_OUTPUT_0, PIO_PULL
 //Global struct for Heatercontrol
 heater_struct heaters[2];
 heater_bed_struct bed_heater;
+volatile unsigned char g_pwm_value[2] = {0,0};
 
 //-------------------------
 // SETUP HEATERS IO
@@ -159,14 +164,12 @@ void init_heaters_values(void)
 	heaters[1].temp_iState_max = (256L * PID_INTEGRAL_DRIVE_MAX) / (int)heaters[1].PID_I;
 	heaters[1].temp_iState_min = heaters[1].temp_iState_max * (-1);
 	
-	
-	
 }
 
 //--------------------------------------------------
 // Simple Hotend Tempcontrol with ON/OFF switching
 //--------------------------------------------------
-void onoff_control_hotend(heater_struct *hotend)
+void heater_on_off_control(heater_struct *hotend)
 {
 	hotend->akt_temp = analog2temp(adc_read(hotend->ad_cannel));
 	
@@ -190,23 +193,32 @@ void onoff_control_hotend(heater_struct *hotend)
 	
 }
 
+//--------------------------------------------------
+// PWM with Timer 1
+//--------------------------------------------------
+
+volatile unsigned char g_TC1_pwm_cnt = 0;
+//void TC1_IrqHandler(void)
 void heater_soft_pwm(void)
 {
-	static unsigned char pwm_cnt = 0;
-	
-	pwm_cnt++;
+
+	//volatile unsigned int dummy;
+    // Clear status bit to acknowledge interrupt
+    //dummy = AT91C_BASE_TC0->TC_SR;
+
+	g_TC1_pwm_cnt++;
 	
 	if(heaters[0].soft_pwm_aktiv == 1)
 	{
-		if(heaters[0].pwm == 0)
+		if(g_pwm_value[0] == 0)
 			heater_switch(heaters[0].io_adr, 0);
-		else if(heaters[0].pwm == 255)
+		else if(g_pwm_value[0] == 255)
 			heater_switch(heaters[0].io_adr, 1);
 		else
 		{
-			if(pwm_cnt == 0)
+			if(g_TC1_pwm_cnt == 0)
 				heater_switch(heaters[0].io_adr, 1);
-			else if(pwm_cnt >= heaters[0].pwm)
+			else if(g_TC1_pwm_cnt >= g_pwm_value[0])
 				heater_switch(heaters[0].io_adr, 0);
 		}
 	}
@@ -243,7 +255,7 @@ void heater_PID_control(heater_struct *hotend)
 	#endif
 
 	error = hotend->target_temp - hotend->akt_temp;
-	printf("ERR: %d ", error);
+	//printf("ERR: %d ", error);
 	delta_temp = hotend->akt_temp - hotend->prev_temp;
 
 	hotend->prev_temp = hotend->akt_temp;
@@ -255,14 +267,14 @@ void heater_PID_control(heater_struct *hotend)
 	if(abs(error) < 30)
 	{
 		hotend->temp_iState += error;
-		printf("I1: %d ", hotend->temp_iState);
+		//printf("I1: %d ", hotend->temp_iState);
 		hotend->temp_iState = constrain(hotend->temp_iState, hotend->temp_iState_min, hotend->temp_iState_max);
-		printf("I2: %d ", hotend->temp_iState);
+		//printf("I2: %d ", hotend->temp_iState);
 		hotend->iTerm = (int)(((long)hotend->PID_I * hotend->temp_iState) / 256);
 		heater_duty += hotend->iTerm;
 	}
 	
-	printf("I: %d ", hotend->iTerm);
+	//printf("I: %d ", hotend->iTerm);
 
 	int prev_error = abs(hotend->target_temp - hotend->prev_temp);
 	int log3 = 1; // discrete logarithm base 3, plus 1
@@ -273,10 +285,10 @@ void heater_PID_control(heater_struct *hotend)
 
 	hotend->dTerm = (int)(((long)hotend->PID_Kd * delta_temp) / (256*log3));
 	
-	printf("D: %d ", hotend->dTerm);
+	//printf("D: %d ", hotend->dTerm);
 	
 	heater_duty += hotend->dTerm;
-	printf("PWM: %d \n", heater_duty);
+	//printf("PWM: %d \n", heater_duty);
 	
 	heater_duty = constrain(heater_duty, 0, HEATER_CURRENT);
 	
@@ -315,6 +327,35 @@ void onoff_control_bed(void)
 }
 
 //--------------------------------------------------
+// Init Timer 1 for Soft PWM (Hotend 1 & 2)
+//--------------------------------------------------
+void ConfigureTc_1(void)
+{
+	unsigned int div;
+	unsigned int tcclks;
+
+	// Enable peripheral clock
+	AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_TC1;
+	unsigned int freq=20000; 
+	// Configure TC for a 20 kHz frequency and trigger on RC compare
+	TC_FindMckDivisor(freq, BOARD_MCK, &div, &tcclks);
+	TC_Configure(AT91C_BASE_TC1, tcclks | AT91C_TC_CPCTRG);
+	//AT91C_BASE_TC0->TC_RB = 6*((BOARD_MCK / div)/1000000); //6 uSec per step pulse 
+	AT91C_BASE_TC1->TC_RC = (BOARD_MCK / div) / freq; // timerFreq / desiredFreq
+
+	// Configure and enable interrupt on RC compare
+									 //TC1_IrqHandler
+	//IRQ_ConfigureIT(AT91C_ID_TC1, 0, TC1_IrqHandler);
+	AT91C_BASE_TC1->TC_IER = AT91C_TC_CPCS; //|AT91C_TC_CPBS;
+	IRQ_EnableIT(AT91C_ID_TC1);
+
+	// Start the counter if LED is enabled.
+	TC_Start(AT91C_BASE_TC1);
+
+}
+
+
+//--------------------------------------------------
 // Cycle Function for Tempcontrol
 //--------------------------------------------------
 void manage_heaters(void)
@@ -334,13 +375,15 @@ void manage_heaters(void)
 	if(hotend_timer == 0)
 	{
 		//Call every 200 ms
-		//onoff_control_hotend(&heaters[0]);
+		//heater_on_off_control(&heaters[0]);
 		heater_PID_control(&heaters[0]);
+		g_pwm_value[0] = heaters[0].pwm;
+		//printf("gPWM: %d \n\r", g_pwm_value[0]);
 		hotend_timer = 1;
 	}
 	else if(hotend_timer == 1)
 	{
-		onoff_control_hotend(&heaters[1]);
+		heater_on_off_control(&heaters[1]);
 		hotend_timer = 0;
 	}
 }

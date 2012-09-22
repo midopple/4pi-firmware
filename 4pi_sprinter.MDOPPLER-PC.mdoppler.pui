@@ -1,0 +1,37 @@
+[Open Files]
+Active File Display Mode=3
+Active File Index=1
+Open File Line0=0
+Open File Line1=1334
+Open File Line2=0
+Open File Line3=3882
+Open File Line4=2723
+Open File Line5=1317
+Open File Line6=5563
+Open File Pos0=0
+Open File Pos1=1675
+Open File Pos2=849
+Open File Pos3=0
+Open File Pos4=2557
+Open File Pos5=0
+Open File Pos6=6055
+Open File Window Pos0=0,1,-1,-1,-8,-28,23,23,892,445
+Open File Window Pos1=2,3,-1,-1,-8,-28,46,46,915,470
+Open File Window Pos2=0,1,-1,-1,-8,-28,46,46,915,470
+Open File Window Pos3=0,1,-1,-1,-8,-28,69,69,938,493
+Open File Window Pos4=0,1,-1,-1,-8,-28,115,115,984,539
+Open File Window Pos5=0,1,-1,-1,-8,-28,138,138,1007,562
+Open File Window Pos6=0,1,-1,-1,-8,-28,161,161,1030,585
+Open File0=.\src\com_interpreter.c
+Open File1=.\src\main.c
+Open File2=.\src\heaters.c
+Open File3=.\src\motoropts.c
+Open File4=D:\3D_Drucker\ARM\kliment4pi_firmware_dpl\at91lib\peripherals\pio\pio.c
+Open File5=.\src\syscalls.c
+Open File6=.\src\samadc.c
+Open File7=
+Remember Files=1
+
+[Project Information]
+Project Start=DC0709000500070015003A00160000005D
+Working Time=6761
