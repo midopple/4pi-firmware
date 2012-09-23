@@ -67,6 +67,9 @@ int saved_feedmultiply = 0;
 volatile char feedmultiplychanged=0;
 volatile int extrudemultiply=100; //100->1 200->2
 
+unsigned char active_extruder = 0;		//0 --> Exteruder 1 / 1 --> Extruder 2
+unsigned char tmp_extruder = 0;
+
 extern volatile unsigned long timestamp;
 
 //extern int bed_temp_celsius;
@@ -279,16 +282,21 @@ void process_commands()
         }
         break;
       case 104: // M104
-		if (code_seen('S')) heaters[0].target_temp = code_value();
-		heaters[1].target_temp = heaters[0].target_temp;
+		if (code_seen('S'))
+		{
+			if(tmp_extruder < MAX_EXTRUDER)
+				heaters[tmp_extruder].target_temp = code_value();
+		}
         break;
       case 140: // M140 set bed temp
 		if (code_seen('S')) bed_heater.target_temp = code_value();
-	  
         break;
       case 105: // M105
 
-		  	usb_printf("ok T:%u @%u B:%u",heaters[0].akt_temp,heaters[0].pwm,bed_heater.akt_temp);
+		  	if(tmp_extruder < MAX_EXTRUDER)
+				usb_printf("ok T:%u @%u B:%u",heaters[tmp_extruder].akt_temp,heaters[tmp_extruder].pwm,bed_heater.akt_temp);
+			else
+				usb_printf("ok T:%u @%u B:%u",heaters[0].akt_temp,heaters[0].pwm,bed_heater.akt_temp);
 
         return;
         //break;
@@ -348,7 +356,7 @@ void process_commands()
         }
         break;
       case 93: // M93 show current axis steps.
-		usb_printf("ok X:%g Y:%g Z:%g E:%g",axis_steps_per_unit[0],axis_steps_per_unit[1],axis_steps_per_unit[2],axis_steps_per_unit[3]);
+		//usb_printf("ok X:%g Y:%g Z:%g E:%g",axis_steps_per_unit[0],axis_steps_per_unit[1],axis_steps_per_unit[2],axis_steps_per_unit[3]);
 		printf("ok X:%g Y:%g Z:%g E:%g",axis_steps_per_unit[0],axis_steps_per_unit[1],axis_steps_per_unit[2],axis_steps_per_unit[3]);
         break;
 	  case 114: // M114 Display current position
@@ -424,16 +432,20 @@ void process_commands()
       break;
       case 301: // M301
       {
-        //if(code_seen('P')) PID_Kp = code_value();
-        //if(code_seen('I')) PID_Ki = code_value();
-        //if(code_seen('D')) PID_Kd = code_value();
-        //updatePID();
+        if(tmp_extruder < MAX_EXTRUDER)
+		{
+			if(code_seen('P')) heaters[tmp_extruder].PID_Kp = code_value();
+			if(code_seen('I')) heaters[tmp_extruder].PID_I = code_value();
+			if(code_seen('D')) heaters[tmp_extruder].PID_Kd = code_value();
+			heaters[tmp_extruder].temp_iState_max = (256L * PID_INTEGRAL_DRIVE_MAX) / (int)heaters[tmp_extruder].PID_I;
+			heaters[tmp_extruder].temp_iState_min = heaters[tmp_extruder].temp_iState_max * (-1);
+		}
       }
       break;
       case 303: // M303 PID autotune
       {
-        float help_temp = 150.0;
-        if (code_seen('S')) help_temp=code_value();
+        //float help_temp = 150.0;
+        //if (code_seen('S')) help_temp=code_value();
         //PID_autotune(help_temp);
       }
       break;
@@ -449,6 +461,19 @@ void process_commands()
 
     }
     
+  }
+  else if(code_seen('T')) 
+  {
+    tmp_extruder = code_value();
+    if(tmp_extruder >= MAX_EXTRUDER) 
+	{
+		//No more extruder
+		usb_printf("Only 2 Extruder possible\r\n");
+    }
+    else 
+	{
+		active_extruder = tmp_extruder;
+    }
   }
   else{
   

@@ -81,6 +81,7 @@ void st_wake_up();
 void st_synchronize();
 void st_set_position(long x, long y, long z, long e);
 void st_synchronize();
+block_t *plan_get_current_block();
 
 
 extern char axis_relative_modes[];
@@ -104,5 +105,10 @@ extern float add_homing[];
 extern char axis_codes[];
 extern char axis_relative_modes[];
 extern float offset[];
+extern unsigned char is_homing;
+
+extern unsigned int virtual_steps_x;
+extern unsigned int virtual_steps_y;
+extern unsigned int virtual_steps_z;
 
 

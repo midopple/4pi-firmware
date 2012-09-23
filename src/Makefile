@@ -179,6 +179,7 @@ C_OBJECTS += com_interpreter.o
 C_OBJECTS += heaters.o
 C_OBJECTS += arc_func.o
 C_OBJECTS += planner.o
+C_OBJECTS += stepper_control.o
 
 
 

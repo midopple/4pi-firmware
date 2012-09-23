@@ -80,6 +80,10 @@ float move_acceleration = 1000;         // Normal acceleration mm/s^2
 // The current position of the tool in absolute steps
 extern volatile int extrudemultiply; // Sets extrude multiply factor (in percent)
 
+unsigned int virtual_steps_x = 0;
+unsigned int virtual_steps_y = 0;
+unsigned int virtual_steps_z = 0;
+
 extern volatile unsigned long timestamp;
 
 
@@ -168,7 +172,7 @@ void prepare_move()
   }
   
   printf("new POS 1:%d %d %d %d %d\n\r",(int)destination[0],(int)destination[1],(int)destination[2],(int)destination[3],(int)feedrate);
-  plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], help_feedrate/6000.0,1);
+  plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], help_feedrate/6000.0,active_extruder);
   
   for(i=0; i < NUM_AXIS; i++)
   {
@@ -196,7 +200,7 @@ void prepare_arc_move(char isclockwise)
   }
 
   // Trace the arc
-  mc_arc(current_position, destination, offset, X_AXIS, Y_AXIS, Z_AXIS, help_feedrate/6000.0, r, isclockwise,1);
+  mc_arc(current_position, destination, offset, X_AXIS, Y_AXIS, Z_AXIS, help_feedrate/6000.0, r, isclockwise,active_extruder);
   
   // As far as the parser is concerned, the position is now == target. In reality the
   // motion control system might still be processing the action and the real tool position
@@ -977,9 +981,9 @@ void plan_set_position(float x, float y, float z, float e)
   position[Z_AXIS] = lround(z*axis_steps_per_unit[Z_AXIS]);     
   position[E_AXIS] = lround(e*axis_steps_per_unit[E_AXIS]);  
 
-  //virtual_steps_x = 0;
-  //virtual_steps_y = 0;
-  //virtual_steps_z = 0;
+  virtual_steps_x = 0;
+  virtual_steps_y = 0;
+  virtual_steps_z = 0;
 
   previous_nominal_speed = 0.0; // Resets planner junction speeds. Assumes start from rest.
   previous_speed[0] = 0.0;
