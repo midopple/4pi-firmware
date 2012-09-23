@@ -22,6 +22,7 @@
  #define MAX_CMD_SIZE 96
  #define BUFSIZE 6
 
+ #define MAX_EXTRUDER 2
 
  unsigned char get_byte_from_UART(unsigned char *zeichen);
 
@@ -47,4 +48,8 @@
  extern unsigned long previous_millis_cmd;
  extern unsigned long max_inactive_time;
  extern unsigned long stepper_inactive_time;
+ extern unsigned char active_extruder;
+ extern unsigned char tmp_extruder;
+
+
 

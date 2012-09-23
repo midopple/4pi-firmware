@@ -18,6 +18,7 @@
 #include "serial.h"
 #include "samadc.h"
 #include "com_interpreter.h"
+#include "stepper_control.h"
 //#include "heaters.h"
 
 
@@ -119,7 +120,10 @@ void SysTick_Handler(void)
 	
 	//Had to wait 10ms to avoid crash ????
 	if(timestamp > 10)
+	{
 		heater_soft_pwm();
+		stepper_timer();
+	}
 	
 	    
 }
