@@ -14,6 +14,7 @@
 #include "samadc.h"
 #include "com_interpreter.h"
 #include "stepper_control.h"
+#include "planner.h"
 //#include "heaters.h"
 
 
@@ -118,6 +119,7 @@ void SysTick_Handler(void)
 	{
 		heater_soft_pwm();
 		stepper_timer();
+		motor_unstep();
 	}
 	
 	    
