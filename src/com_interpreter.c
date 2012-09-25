@@ -47,11 +47,11 @@ char cmdbuffer[BUFSIZE][MAX_CMD_SIZE];
 unsigned char fromsd[BUFSIZE];
 
 
-unsigned char bufindr = 0;
-unsigned char bufindw = 0;
-unsigned char buflen = 0;
+volatile unsigned char bufindr = 0;
+volatile unsigned char bufindw = 0;
+volatile unsigned char buflen = 0;
 unsigned char serial_char;
-int serial_count = 0;
+volatile int serial_count = 0;
 unsigned char comment_mode = 0;
 char *strchr_pointer; // just a pointer to find chars in the cmd string like X, Y, Z, E, etc
 long gcode_N, gcode_LastN;
@@ -291,7 +291,6 @@ void process_commands()
 		if (code_seen('S')) bed_heater.target_temp = code_value();
         break;
       case 105: // M105
-
 		  	if(tmp_extruder < MAX_EXTRUDER)
 				usb_printf("ok T:%u @%u B:%u",heaters[tmp_extruder].akt_temp,heaters[tmp_extruder].pwm,bed_heater.akt_temp);
 			else
@@ -356,7 +355,7 @@ void process_commands()
         break;
       case 93: // M93 show current axis steps.
 		//usb_printf("ok X:%g Y:%g Z:%g E:%g",axis_steps_per_unit[0],axis_steps_per_unit[1],axis_steps_per_unit[2],axis_steps_per_unit[3]);
-		printf("ok X:%g Y:%g Z:%g E:%g",axis_steps_per_unit[0],axis_steps_per_unit[1],axis_steps_per_unit[2],axis_steps_per_unit[3]);
+		printf("ok X:%d Y:%d Z:%d E:%d",(int)axis_steps_per_unit[0],(int)axis_steps_per_unit[1],(int)axis_steps_per_unit[2],(int)axis_steps_per_unit[3]);
         break;
 	  case 114: // M114 Display current position
 		usb_printf("X:%d Y:%d Z:%d E:%d",(int)current_position[0],(int)current_position[1],(int)current_position[2],(int)current_position[3]);

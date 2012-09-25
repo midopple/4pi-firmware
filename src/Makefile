@@ -48,7 +48,7 @@ BOARD = 4pi
 TRACE_LEVEL = 3
 
 # Optimization level, put in comment for debugging
-OPTIMIZATION = -O0
+OPTIMIZATION = -Os
 
 # AT91 library directory
 AT91LIB = ../at91lib

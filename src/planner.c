@@ -92,9 +92,9 @@ extern volatile unsigned long timestamp;
 //===========================================================================
 #define BLOCK_BUFFER_SIZE 16
 #define BLOCK_BUFFER_MASK 0x0f
-static block_t block_buffer[BLOCK_BUFFER_SIZE];            // A ring buffer for motion instructions
-static volatile unsigned char block_buffer_head;           // Index of the next block to be pushed
-static volatile unsigned char block_buffer_tail;           // Index of the block to process now
+block_t block_buffer[BLOCK_BUFFER_SIZE];            // A ring buffer for motion instructions
+volatile unsigned char block_buffer_head;           // Index of the next block to be pushed
+volatile unsigned char block_buffer_tail;           // Index of the block to process now
 
 // The current position of the tool in absolute steps
 long position[4];   

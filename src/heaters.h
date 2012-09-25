@@ -31,7 +31,7 @@
 
 // Support to compute temperature  from themistor Beta instead of using lookup tables
 // See http://en.wikipedia.org/wiki/Thermistor#B_or_.CE.B2_parameter_equation
-#define COMPUTE_THERMISTORS
+//#define COMPUTE_THERMISTORS
 #define ABS_ZERO -273.15
 #define ADC_VREF       3300  // 3.3 * 1000
 

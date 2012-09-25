@@ -81,6 +81,7 @@ void st_wake_up();
 void st_synchronize();
 void st_set_position(long x, long y, long z, long e);
 void st_synchronize();
+void plan_discard_current_block();
 block_t *plan_get_current_block();
 
 

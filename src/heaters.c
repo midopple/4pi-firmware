@@ -47,6 +47,8 @@ const Pin AUX2={1 <<  24, AT91C_BASE_PIOA, AT91C_ID_PIOA, PIO_OUTPUT_0, PIO_PULL
 heater_struct heaters[2];
 heater_bed_struct bed_heater;
 volatile unsigned char g_pwm_value[2] = {0,0};
+volatile unsigned char g_pwm_io_adr[2] = {0,0};
+
 
 //-------------------------
 // SETUP HEATERS IO
@@ -165,6 +167,7 @@ void init_heaters_values(void)
 {
 	
 	heaters[0].io_adr = HEATER_HOTEND_1;
+	g_pwm_io_adr[0] = HEATER_HOTEND_1;
 	heaters[0].ad_cannel = 3;
 	heaters[0].pwm = 0;
 	heaters[0].soft_pwm_aktiv = 1;
@@ -177,6 +180,7 @@ void init_heaters_values(void)
 	heaters[0].temp_iState_min = heaters[0].temp_iState_max * (-1);
 
 	heaters[1].io_adr = HEATER_HOTEND_2;
+	g_pwm_io_adr[1] = HEATER_HOTEND_2;
 	heaters[1].ad_cannel = 1;
 	heaters[1].pwm = 0;
 	heaters[1].soft_pwm_aktiv = 0;
@@ -235,15 +239,15 @@ void heater_soft_pwm(void)
 	if(heaters[0].soft_pwm_aktiv == 1)
 	{
 		if(g_pwm_value[0] == 0)
-			heater_switch(heaters[0].io_adr, 0);
+			heater_switch(g_pwm_io_adr[0], 0);
 		else if(g_pwm_value[0] == 255)
-			heater_switch(heaters[0].io_adr, 1);
+			heater_switch(g_pwm_io_adr[0], 1);
 		else
 		{
 			if(g_TC1_pwm_cnt == 0)
-				heater_switch(heaters[0].io_adr, 1);
+				heater_switch(g_pwm_io_adr[0], 1);
 			else if(g_TC1_pwm_cnt >= g_pwm_value[0])
-				heater_switch(heaters[0].io_adr, 0);
+				heater_switch(g_pwm_io_adr[0], 0);
 		}
 	}
 
@@ -402,12 +406,14 @@ void manage_heaters(void)
 		//heater_on_off_control(&heaters[0]);
 		heater_PID_control(&heaters[0]);
 		g_pwm_value[0] = heaters[0].pwm;
+		g_pwm_io_adr[0] = heaters[0].io_adr;
 		//printf("gPWM: %d \n\r", g_pwm_value[0]);
 		hotend_timer = 1;
 	}
 	else if(hotend_timer == 1)
 	{
 		heater_on_off_control(&heaters[1]);
+		g_pwm_io_adr[1] = heaters[1].io_adr;
 		hotend_timer = 0;
 	}
 }

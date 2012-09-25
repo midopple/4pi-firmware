@@ -73,7 +73,7 @@ const unsigned char INVERT_E_DIR = 0;
   #define CHECK_ENDSTOPS
 #endif
 
-static block_t *current_block;  // A pointer to the block currently being traced
+volatile block_t *current_block;  // A pointer to the block currently being traced
 
 // Variables used by The Stepper Driver Interrupt
 static unsigned char out_bits;        // The next stepping-bits to be output
@@ -196,6 +196,7 @@ void stepper_timer(void)
     // Anything in the buffer?
     current_block = plan_get_current_block();
     if (current_block != NULL) {
+	  printf("get block\n\r");
       trapezoid_generator_reset();
       counter_x = -(current_block->step_event_count >> 1);
       counter_y = counter_x;

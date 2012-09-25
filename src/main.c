@@ -97,7 +97,7 @@ void SysTick_Handler(void)
     //        printf("Channel %u : %u mV\n", i,adc_read(i));
     
 
-    if(timestamp%2000==0)
+    if(timestamp%5000==0)
     {
 	    //printf("Temp 0 / 1: %u mV / %u mV \n", adc_read(5), adc_read(3));
 
@@ -197,17 +197,24 @@ int main()
 	//ConfigureTc_1();
 
 	plan_init();
-	
+	printf("Plan Init\n\r");
 
     //motor_enaxis(0,1);
     //motor_enaxis(1,1);
-		while (1) {
+	while (1)
+	{
   		//uncomment to use//sprinter_mainloop();
     	//main loop events go here
+		
+		if(timestamp%2==0) //every 2 ms
+		{
+			//stepper_timer();
+		}
     	
-    	if(buflen)
-		  {
-    		//-------- Check and execute G-CODE --------------
+    	if(buflen > 0)
+		{
+			
+			//-------- Check and execute G-CODE --------------
 			process_commands();
 			
 			//-------- Increment G-Code FIFO  --------------
@@ -215,7 +222,7 @@ int main()
 		    bufindr++;
 		    if(bufindr == BUFSIZE) bufindr = 0;
 			
-		  }
+		}
 		  
     }
 }

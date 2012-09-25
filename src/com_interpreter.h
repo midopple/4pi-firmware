@@ -37,9 +37,9 @@
  unsigned char code_seen(char code);
  
 
- extern unsigned char buflen;
- extern unsigned char bufindr;
- extern unsigned char bufindw;
+ extern volatile unsigned char buflen;
+ extern volatile unsigned char bufindr;
+ extern volatile unsigned char bufindw;
  extern unsigned char relative_mode;
  extern volatile int feedmultiply;
  extern int saved_feedmultiply;
