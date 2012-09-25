@@ -78,7 +78,6 @@ extern volatile unsigned long timestamp;
 void usb_characterhandler(unsigned char c){ 
     //every time the USB receives a new character, this function is called
 	uart_in_buffer[uart_wr_pointer++] = c;
-    //printf("%c, %u\n",c,uart_wr_pointer);
 	if(uart_wr_pointer >= UART_BUFFER_SIZE)
 		uart_wr_pointer = 0;
 }
@@ -99,14 +98,14 @@ unsigned char get_byte_from_UART(unsigned char *zeichen)
 
 void ClearToSend()
 {
-  previous_millis_cmd = timestamp;
-  usb_printf("ok\r\n");
+	previous_millis_cmd = timestamp;
+	usb_printf("ok\r\n");
 }
 
 void FlushSerialRequestResend()
 {
-  uart_rd_pointer = uart_wr_pointer;
-  usb_printf("Resend:%u ok\r\n",gcode_LastN + 1);
+	uart_rd_pointer = uart_wr_pointer;
+	usb_printf("Resend:%u ok\r\n",gcode_LastN + 1);
 }
 
 void get_command() 
