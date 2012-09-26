@@ -56,7 +56,7 @@ volatile unsigned char g_pwm_io_adr[2] = {0,0};
 void heaters_setup(){
     Pin FETPINS[]={BEDHEAT,HOTEND1,HOTEND2,AUX1,AUX2};
     PIO_Configure(FETPINS,5);
-    int i;
+    unsigned short i;
     for(i=0;i<5;++i)
         PIO_Clear(&(FETPINS[i]));
 		
@@ -85,14 +85,14 @@ void heater_switch(unsigned char heater, unsigned char en){
 
 #if defined COMPUTE_THERMISTORS
 
-int temp2analog_thermistor(int celsius, const float beta, const float rs, const float r_inf) {
+signed short temp2analog_thermistor(signed short celsius, const float beta, const float rs, const float r_inf) {
 	float r = r_inf*exp(beta/(celsius - ABS_ZERO));
-	return (int)(0.5 + ADC_VREF*r/(r + rs));
+	return (signed short)(0.5 + ADC_VREF*r/(r + rs));
 }
 
 #else
-int temp2analog_thermistor(int celsius, const short table[][2], int numtemps) {
-    int raw = 0;
+signed short temp2analog_thermistor(signed short celsius, const short table[][2], signed short numtemps) {
+    signed short raw = 0;
     unsigned char i;
     
     for (i=1; i<numtemps; i++)
@@ -124,15 +124,15 @@ int temp2analog_thermistor(int celsius, const short table[][2], int numtemps) {
 
 #if defined COMPUTE_THERMISTORS
 
-int analog2temp_thermistor(int raw, const float beta, const float rs, const float r_inf) {
+signed short analog2temp_thermistor(signed short raw, const float beta, const float rs, const float r_inf) {
 	float r = rs/(ADC_VREF/(float)(raw))-1;
-	return (int)(0.5 + ABS_ZERO + beta/log( r/r_inf ));
+	return (signed short)(0.5 + ABS_ZERO + beta/log( r/r_inf ));
 }
 
 #else
 
-int analog2temp_thermistor(int raw,const short table[][2], int numtemps) {
-    int celsius = 0;
+signed short analog2temp_thermistor(signed short raw,const short table[][2], signed short numtemps) {
+    signed short celsius = 0;
     unsigned char i;
     
     //raw = 3300 - raw;
@@ -176,7 +176,7 @@ void init_heaters_values(void)
 	heaters[0].PID_Kd = PID_DGAIN;
 	heaters[0].temp_iState = 0;
 	heaters[0].prev_temp = 0;
-	heaters[0].temp_iState_max = (256L * PID_INTEGRAL_DRIVE_MAX) / (int)heaters[0].PID_I;
+	heaters[0].temp_iState_max = (256L * PID_INTEGRAL_DRIVE_MAX) / (signed short)heaters[0].PID_I;
 	heaters[0].temp_iState_min = heaters[0].temp_iState_max * (-1);
 
 	heaters[1].io_adr = HEATER_HOTEND_2;
@@ -189,7 +189,7 @@ void init_heaters_values(void)
 	heaters[1].PID_Kd = PID_DGAIN;
 	heaters[1].temp_iState = 0;
 	heaters[1].prev_temp = 0;
-	heaters[1].temp_iState_max = (256L * PID_INTEGRAL_DRIVE_MAX) / (int)heaters[1].PID_I;
+	heaters[1].temp_iState_max = (256L * PID_INTEGRAL_DRIVE_MAX) / (signed short)heaters[1].PID_I;
 	heaters[1].temp_iState_min = heaters[1].temp_iState_max * (-1);
 	
 }
@@ -232,25 +232,27 @@ void heater_soft_pwm(void)
 
 	//volatile unsigned int dummy;
     // Clear status bit to acknowledge interrupt
-    //dummy = AT91C_BASE_TC0->TC_SR;
+    //dummy = AT91C_BASE_TC1->TC_SR;
 
-	g_TC1_pwm_cnt++;
-	
-	if(heaters[0].soft_pwm_aktiv == 1)
-	{
-		if(g_pwm_value[0] == 0)
-			heater_switch(g_pwm_io_adr[0], 0);
-		else if(g_pwm_value[0] == 255)
-			heater_switch(g_pwm_io_adr[0], 1);
-		else
+	//if(dummy & AT91C_TC_CPCS)
+	//{
+		g_TC1_pwm_cnt+=2;
+		
+		if(heaters[0].soft_pwm_aktiv == 1)
 		{
-			if(g_TC1_pwm_cnt == 0)
-				heater_switch(g_pwm_io_adr[0], 1);
-			else if(g_TC1_pwm_cnt >= g_pwm_value[0])
+			if(g_pwm_value[0] == 0)
 				heater_switch(g_pwm_io_adr[0], 0);
+			else if(g_pwm_value[0] == 255)
+				heater_switch(g_pwm_io_adr[0], 1);
+			else
+			{
+				if(g_TC1_pwm_cnt == 0)
+					heater_switch(g_pwm_io_adr[0], 1);
+				else if(g_TC1_pwm_cnt >= g_pwm_value[0])
+					heater_switch(g_pwm_io_adr[0], 0);
+			}
 		}
-	}
-
+	//}
 }
 
 //--------------------------------------------------
@@ -258,9 +260,9 @@ void heater_soft_pwm(void)
 //--------------------------------------------------
 void heater_PID_control(heater_struct *hotend)
 {
-	int error;
-	int delta_temp;
-	int heater_duty;
+	signed short error;
+	signed short delta_temp;
+	signed short heater_duty;
   
 	hotend->akt_temp = analog2temp(adc_read(hotend->ad_cannel));
   
@@ -287,9 +289,9 @@ void heater_PID_control(heater_struct *hotend)
 	delta_temp = hotend->akt_temp - hotend->prev_temp;
 
 	hotend->prev_temp = hotend->akt_temp;
-	hotend->pTerm = (int)(((long)hotend->PID_Kp * error) / 256);
+	hotend->pTerm = (signed short)(((long)hotend->PID_Kp * error) / 256);
 	
-	const int H0 = min(HEATER_DUTY_FOR_SETPOINT(hotend->target_temp),HEATER_CURRENT);
+	const signed short H0 = min(HEATER_DUTY_FOR_SETPOINT(hotend->target_temp),HEATER_CURRENT);
 	heater_duty = H0 + hotend->pTerm;
 
 	if(abs(error) < 30)
@@ -298,20 +300,20 @@ void heater_PID_control(heater_struct *hotend)
 		//printf("I1: %d ", hotend->temp_iState);
 		hotend->temp_iState = constrain(hotend->temp_iState, hotend->temp_iState_min, hotend->temp_iState_max);
 		//printf("I2: %d ", hotend->temp_iState);
-		hotend->iTerm = (int)(((long)hotend->PID_I * hotend->temp_iState) / 256);
+		hotend->iTerm = (signed short)(((long)hotend->PID_I * hotend->temp_iState) / 256);
 		heater_duty += hotend->iTerm;
 	}
 	
 	//printf("I: %d ", hotend->iTerm);
 
-	int prev_error = abs(hotend->target_temp - hotend->prev_temp);
-	int log3 = 1; // discrete logarithm base 3, plus 1
+	signed short prev_error = abs(hotend->target_temp - hotend->prev_temp);
+	signed short log3 = 1; // discrete logarithm base 3, plus 1
 
 	if(prev_error > 81){ prev_error /= 81; log3 += 4; }
 	if(prev_error >  9){ prev_error /=  9; log3 += 2; }
 	if(prev_error >  3){ prev_error /=  3; log3 ++;   }
 
-	hotend->dTerm = (int)(((long)hotend->PID_Kd * delta_temp) / (256*log3));
+	hotend->dTerm = (signed short)(((long)hotend->PID_Kd * delta_temp) / (256*log3));
 	
 	//printf("D: %d ", hotend->dTerm);
 	
@@ -359,22 +361,19 @@ void onoff_control_bed(void)
 //--------------------------------------------------
 void ConfigureTc_1(void)
 {
-	unsigned int div;
-	unsigned int tcclks;
 
 	// Enable peripheral clock
 	AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_TC1;
-	unsigned int freq=20000; 
-	// Configure TC for a 20 kHz frequency and trigger on RC compare
-	TC_FindMckDivisor(freq, BOARD_MCK, &div, &tcclks);
-	TC_Configure(AT91C_BASE_TC1, tcclks | AT91C_TC_CPCTRG);
-	//AT91C_BASE_TC0->TC_RB = 6*((BOARD_MCK / div)/1000000); //6 uSec per step pulse 
-	AT91C_BASE_TC1->TC_RC = (BOARD_MCK / div) / freq; // timerFreq / desiredFreq
+	unsigned int freq=10000; 
+	// Configure TC for a 10 kHz frequency and trigger on RC compare
+	//TC_FindMckDivisor(freq, BOARD_MCK, &div, &tcclks);
+	TC_Configure(AT91C_BASE_TC1, 3 | AT91C_TC_CPCTRG);
+	AT91C_BASE_TC1->TC_RB = 3;
+	AT91C_BASE_TC1->TC_RC = (BOARD_MCK / 128) / freq; // timerFreq / desiredFreq
 
 	// Configure and enable interrupt on RC compare
-									 //TC1_IrqHandler
-	//IRQ_ConfigureIT(AT91C_ID_TC1, 0, TC1_IrqHandler);
-	AT91C_BASE_TC1->TC_IER = AT91C_TC_CPCS; //|AT91C_TC_CPBS;
+	//IRQ_ConfigureIT(AT91C_ID_TC1, 2, TC1_IrqHandler);
+	AT91C_BASE_TC1->TC_IER = AT91C_TC_CPCS | AT91C_TC_CPBS;
 	IRQ_EnableIT(AT91C_ID_TC1);
 
 	// Start the counter if LED is enabled.

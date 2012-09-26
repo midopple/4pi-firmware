@@ -62,10 +62,22 @@ void TC0_IrqHandler(void)
     // Clear status bit to acknowledge interrupt
     
     dummy = AT91C_BASE_TC0->TC_SR;
-    if(dummy & AT91C_TC_CPCS){
+    if(dummy & AT91C_TC_CPCS)
+	{
+		step++;
+		/*
+		if(step > 5000)
+			motor_setdir(0,0);
+		else
+			motor_setdir(0,1);		
+			
+		if(step > 10000) step = 0;
+			
         motor_enaxis(0,1);
-        motor_setdir(0,1);
         motor_step(0);
+		*/
+		stepper_timer();
+		motor_unstep();
     }
     if(dummy & AT91C_TC_CPBS){
         motor_unstep();
@@ -77,7 +89,7 @@ void TC0_IrqHandler(void)
 //----------------------------------------------------------
 //SYSTICK --> INTERRUPT call every 1ms 
 //----------------------------------------------------------
-int i=0;
+//int i=0;
 void SysTick_Handler(void)
 {
     timestamp++;
@@ -118,8 +130,8 @@ void SysTick_Handler(void)
 	if(timestamp > 10)
 	{
 		heater_soft_pwm();
-		stepper_timer();
-		motor_unstep();
+		//stepper_timer();
+		//motor_unstep();
 	}
 	
 	    
@@ -129,17 +141,17 @@ void SysTick_Handler(void)
 
 void ConfigureTc(void)
 {
-    unsigned int div;
-    unsigned int tcclks;
+    //unsigned int div;
+    //unsigned int tcclks;
 
     // Enable peripheral clock
     AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_TC0;
-    unsigned int freq=400; 
+    unsigned int freq=1000; 
     // Configure TC for a 400Hz frequency and trigger on RC compare
-    TC_FindMckDivisor(freq, BOARD_MCK, &div, &tcclks);
-    TC_Configure(AT91C_BASE_TC0, tcclks | AT91C_TC_CPCTRG);
-    AT91C_BASE_TC0->TC_RB = 6*((BOARD_MCK / div)/1000000); //6 uSec per step pulse 
-    AT91C_BASE_TC0->TC_RC = (BOARD_MCK / div) / freq; // timerFreq / desiredFreq
+    //TC_FindMckDivisor(freq, BOARD_MCK, &div, &tcclks);
+    TC_Configure(AT91C_BASE_TC0, 3 | AT91C_TC_CPCTRG);
+    AT91C_BASE_TC0->TC_RB = 3; //6*((BOARD_MCK / div)/1000000); //6 uSec per step pulse 
+    AT91C_BASE_TC0->TC_RC = (BOARD_MCK / 128) / freq; // timerFreq / desiredFreq
 
     // Configure and enable interrupt on RC compare
     IRQ_ConfigureIT(AT91C_ID_TC0, 0, TC0_IrqHandler);
@@ -155,7 +167,7 @@ void ConfigureTc(void)
 
 int main()
 {
-
+	
     TRACE_CONFIGURE(DBGU_STANDARD, 115200, BOARD_MCK);
     printf("-- USB Device CDC Serial Project %s --\n\r", SOFTPACK_VERSION);
     printf("-- %s\n\r", BOARD_NAME);
@@ -163,8 +175,8 @@ int main()
 
     // If they are present, configure Vbus & Wake-up pins
     //PIO_InitializeInterrupts(0);
-    
-    //ConfigureTc();//this is just an example - uncomment it later
+    printf("Configuring Timer 0 Stepper\n\r");
+    ConfigureTc();//this is just an example - uncomment it later
 	
 
     //-------- Init UART --------------
@@ -198,8 +210,8 @@ int main()
 
 	plan_init();
 	printf("Plan Init\n\r");
-
-    //motor_enaxis(0,1);
+	
+	//motor_enaxis(0,1);
     //motor_enaxis(1,1);
 	while (1)
 	{
