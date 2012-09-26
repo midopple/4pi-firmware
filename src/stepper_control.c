@@ -108,6 +108,49 @@ volatile unsigned char old_z_min_endstop=0;
 volatile unsigned char old_z_max_endstop=0;
 
 
+//------------------------------------------------------------------------------
+/// Interrupt handler for TC0 interrupt --> Stepper.
+//------------------------------------------------------------------------------
+void TC0_IrqHandler(void)
+{
+    volatile unsigned int dummy;
+    // Clear status bit to acknowledge interrupt
+    
+    dummy = AT91C_BASE_TC0->TC_SR;
+    if(dummy & AT91C_TC_CPCS)
+	{
+		//Function need 3 µs up to 5µs
+		stepper_timer();
+		motor_unstep();
+    }
+    if(dummy & AT91C_TC_CPBS){
+        //This line is not called ???
+		motor_unstep();
+    }
+ }
+
+void ConfigureTc(void)
+{
+
+    // Enable peripheral clock
+    AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_TC0;
+    unsigned int freq=1000; 
+    //TC_FindMckDivisor(freq, BOARD_MCK, &div, &tcclks);
+    TC_Configure(AT91C_BASE_TC0, 3 | AT91C_TC_CPCTRG);
+    AT91C_BASE_TC0->TC_RB = 3; //6*((BOARD_MCK / div)/1000000); //6 uSec per step pulse 
+    AT91C_BASE_TC0->TC_RC = (BOARD_MCK / 128) / freq; // timerFreq / desiredFreq
+
+    // Configure and enable interrupt on RC compare
+    IRQ_ConfigureIT(AT91C_ID_TC0, 0, TC0_IrqHandler);
+    AT91C_BASE_TC0->TC_IER = AT91C_TC_CPCS|AT91C_TC_CPBS;
+    IRQ_EnableIT(AT91C_ID_TC0);
+
+    // Start the counter if LED is enabled.
+    TC_Start(AT91C_BASE_TC0);
+    
+}
+ 
+
 
 //         __________________________
 //        /|                        |\     _________________         ^
@@ -175,7 +218,7 @@ void stepper_timer(void)
 		current_block = plan_get_current_block();
 		if (current_block != NULL)
 		{
-			printf("get block\n\r");
+			//printf("get block\n\r");
 			trapezoid_generator_reset();
 			counter_x = -(current_block->step_event_count >> 1);
 			counter_y = counter_x;
@@ -339,12 +382,14 @@ void stepper_timer(void)
 			}
 		}
 
+		
+		
 		#ifndef ADVANCE
 		if ((out_bits & (1<<E_AXIS)) != 0) {  // -direction
-		motor_setdir(E_AXIS, INVERT_E_DIR);
+			motor_setdir(E_AXIS, INVERT_E_DIR);
 		}
 		else { // +direction
-		motor_setdir(E_AXIS, !INVERT_E_DIR);
+			motor_setdir(E_AXIS, !INVERT_E_DIR);
 		}
 		#endif //!ADVANCE
 

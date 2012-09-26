@@ -108,8 +108,8 @@ extern char axis_relative_modes[];
 extern float offset[];
 extern unsigned char is_homing;
 
-extern unsigned int virtual_steps_x;
-extern unsigned int virtual_steps_y;
-extern unsigned int virtual_steps_z;
+extern unsigned short virtual_steps_x;
+extern unsigned short virtual_steps_y;
+extern unsigned short virtual_steps_z;
 
 

@@ -31,3 +31,4 @@
  
  
  void stepper_timer(void);
+ void ConfigureTc(void);

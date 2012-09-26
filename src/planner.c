@@ -81,9 +81,9 @@ float move_acceleration = 1000;         // Normal acceleration mm/s^2
 // The current position of the tool in absolute steps
 extern volatile int extrudemultiply; // Sets extrude multiply factor (in percent)
 
-unsigned int virtual_steps_x = 0;
-unsigned int virtual_steps_y = 0;
-unsigned int virtual_steps_z = 0;
+unsigned short virtual_steps_x = 0;
+unsigned short virtual_steps_y = 0;
+unsigned short virtual_steps_z = 0;
 
 extern volatile unsigned long timestamp;
 

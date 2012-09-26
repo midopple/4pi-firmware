@@ -251,6 +251,15 @@ void process_commands()
         previous_millis_cmd = timestamp;
         return;  
       case 4: // G4 dwell
+		codenum = 0;
+        if(code_seen('P')) codenum = code_value(); // milliseconds to wait
+        if(code_seen('S')) codenum = code_value() * 1000; // seconds to wait
+        codenum += timestamp;  // keep track of when we started waiting
+        st_synchronize();  // wait for all movements to finish
+        while(timestamp  < codenum )
+		{
+			
+        }
         break;
       case 28: //G28 Home all Axis one at a time
         break;
@@ -261,7 +270,16 @@ void process_commands()
 		relative_mode = 1;
         break;
       case 92: // G92
-        break;
+		if(!code_seen(axis_codes[E_AXIS])) 
+			st_synchronize();
+          
+        for(cnt_c=0; cnt_c < NUM_AXIS; cnt_c++)
+        {
+			if(code_seen(axis_codes[cnt_c])) current_position[cnt_c] = code_value();  
+        }
+        plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+        
+		break;
       default:
         usb_printf("Unknown G-COM: %s \r\n",cmdbuffer[bufindr]);
       break;
@@ -354,8 +372,8 @@ void process_commands()
         }
         break;
       case 93: // M93 show current axis steps.
-		//usb_printf("ok X:%g Y:%g Z:%g E:%g",axis_steps_per_unit[0],axis_steps_per_unit[1],axis_steps_per_unit[2],axis_steps_per_unit[3]);
-		printf("ok X:%d Y:%d Z:%d E:%d",(int)axis_steps_per_unit[0],(int)axis_steps_per_unit[1],(int)axis_steps_per_unit[2],(int)axis_steps_per_unit[3]);
+		usb_printf("ok X:%d Y:%d Z:%d E:%d",(int)axis_steps_per_unit[0],(int)axis_steps_per_unit[1],(int)axis_steps_per_unit[2],(int)axis_steps_per_unit[3]);
+		//printf("ok X:%d Y:%d Z:%d E:%d",(int)axis_steps_per_unit[0],(int)axis_steps_per_unit[1],(int)axis_steps_per_unit[2],(int)axis_steps_per_unit[3]);
         break;
 	  case 114: // M114 Display current position
 		usb_printf("X:%d Y:%d Z:%d E:%d",(int)current_position[0],(int)current_position[1],(int)current_position[2],(int)current_position[3]);
@@ -473,9 +491,9 @@ void process_commands()
 		active_extruder = tmp_extruder;
     }
   }
-  else{
-  
-      usb_printf("Unknown command: %s \r\n",cmdbuffer[bufindr]);
+  else
+  {
+       usb_printf("Unknown command: %s \r\n",cmdbuffer[bufindr]);
   }
   
   ClearToSend();
