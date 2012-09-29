@@ -164,6 +164,7 @@ static void UsbDataReceived(unsigned int unused,
                             unsigned int received,
                             unsigned int remaining)
 {
+<<<<<<< HEAD
     // Check that data has been received successfully
     
     if (status == USBD_STATUS_SUCCESS) {
@@ -186,6 +187,17 @@ static void UsbDataReceived(unsigned int unused,
     
     }
     else {
+=======
+	int i;
+	const char* pDataPtr = (const char*)pBuffer;
+	
+	if (callback)
+	{
+		for (i=0;i<size;i++)
+			callback(pDataPtr[i]);
+	}
+}
+>>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
 
       //  TRACE_WARNING( "UsbDataReceived: Transfer error\n\r");
     }

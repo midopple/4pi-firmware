@@ -185,7 +185,12 @@ C_OBJECTS += heaters.o
 C_OBJECTS += arc_func.o
 C_OBJECTS += planner.o
 C_OBJECTS += stepper_control.o
+<<<<<<< HEAD
 
+=======
+C_OBJECTS += usb.o
+C_OBJECTS += sdcard.o
+>>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
 
 <<<<<<< HEAD
 C_OBJECTS += Media.o

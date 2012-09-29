@@ -36,6 +36,7 @@
  unsigned char code_seen_str(char code_string[]);
  unsigned char code_seen(char code);
  
+<<<<<<< HEAD
 
  extern unsigned char buflen;
  extern unsigned char bufindr;
@@ -52,4 +53,22 @@
  extern unsigned char tmp_extruder;
 
 
+=======
+
+ extern volatile unsigned char buflen;
+ extern volatile unsigned char bufindr;
+ extern volatile unsigned char bufindw;
+ extern unsigned char relative_mode;
+ extern volatile signed short feedmultiply;
+ extern signed short saved_feedmultiply;
+ extern volatile char feedmultiplychanged;
+ extern volatile signed short extrudemultiply;
+ extern unsigned long previous_millis_cmd;
+ extern unsigned long max_inactive_time;
+ extern unsigned long stepper_inactive_time;
+ extern unsigned char active_extruder;
+ extern unsigned char tmp_extruder;
+
+
+>>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
 

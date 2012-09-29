@@ -17,6 +17,7 @@
  
  
  
+<<<<<<< HEAD
  #define MAX_STEP_FREQUENCY 40000
  
 #define X_MIN_PIN           1
@@ -31,3 +32,32 @@
  
  
  void stepper_timer(void);
+=======
+ #define MAX_STEP_FREQUENCY 30000
+ 
+ //-----------------------------------------------------------------------
+//// ENDSTOP SETTINGS:
+//-----------------------------------------------------------------------
+// Sets direction of endstops when homing; 1=MAX, -1=MIN
+#define X_HOME_DIR -1
+#define Y_HOME_DIR -1
+#define Z_HOME_DIR -1
+ 
+#define X_MIN_ACTIV          1
+#define X_MAX_ACTIV          -1
+
+#define Y_MIN_ACTIV          1
+#define Y_MAX_ACTIV          -1
+
+#define Z_MIN_ACTIV          1
+#define Z_MAX_ACTIV          -1
+ 
+ 
+ 
+ void ConfigureTc0_Stepper(void);
+ void stepper_setup(void);
+ void enable_endstops(unsigned char check);
+ 
+ 
+ 
+>>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837

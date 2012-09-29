@@ -10,6 +10,7 @@
 #include <memories/MEDSdcard.h>
 #include <usb/device/massstorage/MSDDriver.h>
 #include <usb/device/massstorage/MSDLun.h>
+#include <usb/device/composite/CDCDFunctionDriver.h>
 #include <pmc/pmc.h>
 
 #include <stdio.h>
@@ -61,6 +62,7 @@
 //-----------------------------------------------------------------------------
 /// State of USB, for suspend and resume
 unsigned char USBState = STATE_INVALID;
+static unsigned char s_DTRState = 0;
 
 //- CDC
 
@@ -158,6 +160,18 @@ void USBDCallbacks_Suspended(void)
 }
 
 
+static void DTRCallback(unsigned char dtrState)
+{
+	
+	if (s_DTRState != dtrState)
+	{
+		printf("DTR change %d\n",dtrState);
+
+		if (dtrState)
+			usb_printf("start\n");
+	}
+	s_DTRState = dtrState;
+}
 
 //-----------------------------------------------------------------------------
 /// Callback invoked when data has been received on the USB.
@@ -169,8 +183,10 @@ static void UsbDataReceived(unsigned int unused,
 {
    
 	if (status == USBD_STATUS_SUCCESS)
+	{
 		samserial_datareceived(usbSerialBuffer,received);
-
+	}
+	
 	CDCDSerialDriver_Read(0,usbSerialBuffer,DATABUFFERSIZE,(TransferCallback)UsbDataReceived,0);
 }
 
@@ -193,7 +209,7 @@ void usb_unmount_sdcard()
 
 
 
-void usb_printf (char * format, ...)
+void usb_printf (const char * format, ...)
 {
   char buffer[256];
   unsigned int str_len = 0;
@@ -209,8 +225,9 @@ void usb_printf (char * format, ...)
 
 void usb_init()
 {
+	dtrCallback = DTRCallback;
     // USB CDCMSD driver initialization
-    CDCMSDDDriver_Initialize(luns, 1);
+    CDCMSDDDriver_Initialize(luns, 0);
 
 	VBUS_CONFIGURE();
 	USBD_Connect();
@@ -225,14 +242,16 @@ void usb_handle_state()
 {
 	if (USBState == STATE_INVALID)
 	{
-		if (USBD_GetState() == USBD_STATE_CONFIGURED)
+		if (USBD_GetState() >= USBD_STATE_CONFIGURED)
 		{
+			printf("USB connected\n\r");
 			USBState = STATE_RESUME;
 		}
 	}
 	
 	if (USBState == STATE_RESUME)
 	{
+		printf("USB resumed\n\r");
 		CDCDSerialDriver_Read(0,usbSerialBuffer,DATABUFFERSIZE,(TransferCallback)UsbDataReceived,0);
 		USBState = STATE_IDLE;
 	}
