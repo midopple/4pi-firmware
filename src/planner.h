@@ -18,6 +18,14 @@
 #define MINIMUM_PLANNER_SPEED 0.05 // (mm/sec)
 #define MAX_RETRACT_FEEDRATE 100    //mm/sec
 
+extern const int X_MAX_LENGTH;
+extern const int Y_MAX_LENGTH;
+extern const int Z_MAX_LENGTH;
+extern const char min_software_endstops;
+extern const char max_software_endstops;
+extern const int dropsegments;
+
+
 // This struct is used when buffering the setup for each linear movement "nominal" values are as specified in 
 // the source g-code and may never actually be reached if acceleration management is active.
 typedef struct {
@@ -71,6 +79,8 @@ void get_arc_coordinates();
 
 void kill(char debug);
 
+void homing_routine(unsigned char axis);
+
 void check_axes_activity();
 void plan_init();
 void st_init();
@@ -111,5 +121,12 @@ extern unsigned char is_homing;
 extern unsigned short virtual_steps_x;
 extern unsigned short virtual_steps_y;
 extern unsigned short virtual_steps_z;
+
+extern signed short feedrate;
+extern signed short next_feedrate;
+extern signed short saved_feedrate;
+
+extern unsigned char is_homing;
+extern unsigned char home_all_axis;
 
 

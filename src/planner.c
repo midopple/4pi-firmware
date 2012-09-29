@@ -29,6 +29,7 @@
 #include "arc_func.h"
 #include "planner.h"
 #include "heaters.h"
+#include "stepper_control.h"
 
 #define DISABLE_X 0
 #define DISABLE_Y 0
@@ -38,17 +39,19 @@
 #define SLOWDOWN
 
 
-extern void motor_enaxis(unsigned char axis, unsigned char en);
-
-
 const int X_MAX_LENGTH = 200;
 const int Y_MAX_LENGTH = 200;
 const int Z_MAX_LENGTH = 100;
+
 
 const char min_software_endstops = 0; //If true, axis won't move to coordinates less than zero.
 const char max_software_endstops = 1; //If true, axis won't move to coordinates greater than the defined lengths below.
 
 const int dropsegments=5; //everything with less than this number of steps will be ignored as move and joined with the next movement
+
+
+
+extern void motor_enaxis(unsigned char axis, unsigned char en);
 
 
 float destination[NUM_AXIS] = {0.0, 0.0, 0.0, 0.0};
@@ -58,14 +61,14 @@ char axis_codes[NUM_AXIS] = {'X', 'Y', 'Z', 'E'};
 char axis_relative_modes[] = {0, 0, 0, 0};
 float offset[3] = {0.0, 0.0, 0.0};
 
-
-unsigned char home_all_axis = 1;
-int feedrate = 1500, next_feedrate, saved_feedrate;
+signed short feedrate = 1500, next_feedrate, saved_feedrate;
 
 unsigned char is_homing = 0;
+unsigned char home_all_axis = 1;
 
 unsigned long minsegmenttime = 20000;
 float max_feedrate[NUM_AXIS]={400, 400, 2, 45}; // set the max speeds
+float homing_feedrate[] = {1500,1500,120};
 float axis_steps_per_unit[NUM_AXIS] = {80, 80, 3200/1.25,700};
 //unsigned long max_acceleration_units_per_sq_second[NUM_AXIS] = {5000,5000,50,5000}; // Use M201 to override by software
 unsigned long max_acceleration_units_per_sq_second[NUM_AXIS] = {1000,1000,50,5000}; // Use M201 to override by software
@@ -79,7 +82,7 @@ float mintravelfeedrate = 0.0;
 unsigned long axis_steps_per_sqr_second[NUM_AXIS] ;
 float move_acceleration = 1000;         // Normal acceleration mm/s^2
 // The current position of the tool in absolute steps
-extern volatile int extrudemultiply; // Sets extrude multiply factor (in percent)
+extern volatile signed short extrudemultiply; // Sets extrude multiply factor (in percent)
 
 unsigned short virtual_steps_x = 0;
 unsigned short virtual_steps_y = 0;
@@ -253,6 +256,71 @@ void manage_inactivity(char debug)
 	}
 	check_axes_activity();
 }
+
+//-----------------------------------------------------
+// HOMING THE AXIS
+//-----------------------------------------------------
+void homing_routine(unsigned char axis)
+{
+  signed short min_pin, max_pin, home_dir, max_length=0, home_bounce=0;
+
+  switch(axis){
+    case X_AXIS:
+      min_pin = X_MIN_ACTIV;
+      max_pin = X_MAX_ACTIV;
+      home_dir = X_HOME_DIR;
+      max_length = X_MAX_LENGTH;
+      home_bounce = 10;
+      break;
+    case Y_AXIS:
+      min_pin = Y_MIN_ACTIV;
+      max_pin = Y_MAX_ACTIV;
+      home_dir = Y_HOME_DIR;
+      max_length = Y_MAX_LENGTH;
+      home_bounce = 10;
+      break;
+    case Z_AXIS:
+      min_pin = Z_MIN_ACTIV;
+      max_pin = Z_MAX_ACTIV;
+      home_dir = Z_HOME_DIR;
+      max_length = Z_MAX_LENGTH;
+      home_bounce = 4;
+      break;
+    default:
+      //never reached
+      break;
+  }
+
+  if ((min_pin > (-1) && home_dir==(-1)) || (max_pin > (-1) && home_dir==1))
+  {
+    current_position[axis] = (-1.5) * max_length * home_dir;
+    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+    destination[axis] = 0;
+    feedrate = homing_feedrate[axis];
+    prepare_move();
+    st_synchronize();
+
+    current_position[axis] = home_bounce/2 * home_dir;
+    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+    destination[axis] = 0;
+    prepare_move();
+    st_synchronize();
+
+    current_position[axis] = (home_bounce * home_dir)*(-1);
+    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+    destination[axis] = 0;
+    feedrate = homing_feedrate[axis]/2;
+    prepare_move();
+    st_synchronize();
+
+    current_position[axis] = (home_dir == (-1)) ? 0 : max_length;
+    current_position[axis] += add_homing[axis];
+    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+    destination[axis] = current_position[axis];
+    feedrate = 0;
+  }
+}
+
 
 
 // Planner with Interrupt for Stepper

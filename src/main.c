@@ -138,11 +138,16 @@ int main()
 	SysTick_Configure(1, BOARD_MCK/1000, SysTick_Handler);
 	
 	//-------- Timer 0 for Stepper --------------
+	printf("Init Stepper IO\n\r");
+    stepper_setup();	//Timer for Stepper
+
+
+	//-------- Timer 0 for Stepper --------------
 	printf("Configuring Timer 0 Stepper\n\r");
-    ConfigureTc();	//Timer for Stepper
+    ConfigureTc0_Stepper();	//Timer for Stepper
 	
 	//-------- Timer 1 for heater PWM --------------
-	printf("Configuring Timer 1.\n\r");
+	printf("Configuring Timer 1 PWM.\n\r");
 	//ConfigureTc_1();
 
 	printf("Plan Init\n\r");

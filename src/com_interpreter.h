@@ -41,10 +41,10 @@
  extern volatile unsigned char bufindr;
  extern volatile unsigned char bufindw;
  extern unsigned char relative_mode;
- extern volatile int feedmultiply;
- extern int saved_feedmultiply;
+ extern volatile signed short feedmultiply;
+ extern signed short saved_feedmultiply;
  extern volatile char feedmultiplychanged;
- extern volatile int extrudemultiply;
+ extern volatile signed short extrudemultiply;
  extern unsigned long previous_millis_cmd;
  extern unsigned long max_inactive_time;
  extern unsigned long stepper_inactive_time;

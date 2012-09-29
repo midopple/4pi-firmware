@@ -35,16 +35,34 @@
 #include "planner.h"
 #include "stepper_control.h"
 
+void TC0_IrqHandler(void);
+
+//Time messure
+const Pin time_check1={1 <<  24, AT91C_BASE_PIOB, AT91C_ID_PIOB, PIO_OUTPUT_0, PIO_PULLUP};
+const Pin time_check2={1 <<  26, AT91C_BASE_PIOB, AT91C_ID_PIOB, PIO_OUTPUT_0, PIO_PULLUP};
+
+//ENDSTOP PINS
+const Pin X_MIN_PIN={1 <<  16, AT91C_BASE_PIOB, AT91C_ID_PIOB, PIO_INPUT, PIO_PULLUP};
+const Pin Y_MIN_PIN={1 <<  17, AT91C_BASE_PIOA, AT91C_ID_PIOA, PIO_INPUT, PIO_PULLUP};
+const Pin Z_MIN_PIN={1 <<  12, AT91C_BASE_PIOC, AT91C_ID_PIOC, PIO_INPUT, PIO_PULLUP};
+const Pin X_MAX_PIN={1 <<  15, AT91C_BASE_PIOC, AT91C_ID_PIOC, PIO_INPUT, PIO_PULLUP};
+const Pin Y_MAX_PIN={1 <<  17, AT91C_BASE_PIOC, AT91C_ID_PIOC, PIO_INPUT, PIO_PULLUP};
+const Pin Z_MAX_PIN={1 <<  18, AT91C_BASE_PIOC, AT91C_ID_PIOC, PIO_INPUT, PIO_PULLUP};
 
 //Motor opts
 extern void motor_enaxis(unsigned char axis, unsigned char en);
 extern void motor_setdir(unsigned char axis, unsigned char dir);
 extern void motor_step(unsigned char axis);
+extern void motor_unstep();
 
 const unsigned char INVERT_X_DIR = 0;
 const unsigned char INVERT_Y_DIR = 0;
 const unsigned char INVERT_Z_DIR = 1;
 const unsigned char INVERT_E_DIR = 0;
+
+#ifdef ENDSTOPS_ONLY_FOR_HOMING
+unsigned char check_endstops = 0;
+#endif
 
 
 // Stepper
@@ -111,10 +129,13 @@ volatile unsigned char old_z_max_endstop=0;
 //------------------------------------------------------------------------------
 /// Interrupt handler for TC0 interrupt --> Stepper.
 //------------------------------------------------------------------------------
+/*
 void TC0_IrqHandler(void)
 {
     volatile unsigned int dummy;
     // Clear status bit to acknowledge interrupt
+    
+	PIO_Set(&time_check2);
     
     dummy = AT91C_BASE_TC0->TC_SR;
     if(dummy & AT91C_TC_CPCS)
@@ -127,12 +148,35 @@ void TC0_IrqHandler(void)
         //This line is not called ???
 		motor_unstep();
     }
- }
 
-void ConfigureTc(void)
+	PIO_Clear(&time_check2);	
+	//Time at move Steppers is 16 us
+ }
+*/
+
+void stepper_setup(void)
+{
+	
+	Pin time_pins[]={time_check1,time_check2,X_MIN_PIN,Y_MIN_PIN,Z_MIN_PIN,X_MAX_PIN,Y_MAX_PIN,Z_MAX_PIN};
+    PIO_Configure(time_pins,8);
+	
+	
+	
+
+}
+
+void enable_endstops(unsigned char check)
+{
+	#ifdef ENDSTOPS_ONLY_FOR_HOMING
+	check_endstops = check;
+	#endif
+}
+
+
+void ConfigureTc0_Stepper(void)
 {
 
-    // Enable peripheral clock
+	// Enable peripheral clock
     AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_TC0;
     unsigned int freq=1000; 
     //TC_FindMckDivisor(freq, BOARD_MCK, &div, &tcclks);
@@ -208,9 +252,16 @@ void trapezoid_generator_reset()
 
 // "The Stepper Driver Interrupt" - This timer interrupt is the workhorse.  
 // It pops blocks from the block_buffer and executes them by pulsing the stepper pins appropriately. 
-//ISR(TIMER1_COMPA_vect)
-void stepper_timer(void)
+void TC0_IrqHandler(void)
+//void stepper_timer(void)
 {        
+	volatile unsigned int dummy;
+	
+	PIO_Set(&time_check1);
+    
+    // Clear status bit to acknowledge interrupt
+    dummy = AT91C_BASE_TC0->TC_SR;
+		
 	// If there is no current block, attempt to pop one from the buffer
 	if (current_block == NULL)
 	{
@@ -235,6 +286,7 @@ void stepper_timer(void)
 		}    
 	} 
 
+
 	if (current_block != NULL)
 	{
 		// Set directions TO DO This should be done once during init of trapezoid. Endstops -> interrupt
@@ -245,8 +297,8 @@ void stepper_timer(void)
 			motor_setdir(X_AXIS, INVERT_X_DIR);
 			CHECK_ENDSTOPS
 			{
-				#if X_MIN_PIN > -1
-				unsigned char x_min_endstop=0;	//read IO
+				#if X_MIN_ACTIV > -1
+				unsigned char x_min_endstop=PIO_Get(&X_MIN_PIN);	//read IO
 				if(x_min_endstop && old_x_min_endstop && (current_block->steps_x > 0)) 
 				{
 					if(!is_homing)
@@ -268,8 +320,8 @@ void stepper_timer(void)
 			motor_setdir(X_AXIS, !INVERT_X_DIR);
 			CHECK_ENDSTOPS 
 			{
-				#if X_MAX_PIN > -1
-				unsigned char x_max_endstop=0;	//read IO
+				#if X_MAX_ACTIV > -1
+				unsigned char x_max_endstop=PIO_Get(&X_MAX_PIN);	//read IO
 				if(x_max_endstop && old_x_max_endstop && (current_block->steps_x > 0))
 				{
 					if(!is_homing)
@@ -292,8 +344,8 @@ void stepper_timer(void)
 			motor_setdir(Y_AXIS, INVERT_Y_DIR);
 			CHECK_ENDSTOPS
 			{
-				#if Y_MIN_PIN > -1
-				unsigned char y_min_endstop=0;	//read IO
+				#if Y_MIN_ACTIV > -1
+				unsigned char y_min_endstop=PIO_Get(&Y_MIN_PIN);	//read IO
 				if(y_min_endstop && old_y_min_endstop && (current_block->steps_y > 0))
 				{
 					if(!is_homing)
@@ -315,8 +367,8 @@ void stepper_timer(void)
 			motor_setdir(Y_AXIS, !INVERT_Y_DIR);
 			CHECK_ENDSTOPS
 			{
-				#if Y_MAX_PIN > -1
-				unsigned char y_max_endstop=0;	//read IO
+				#if Y_MAX_ACTIV > -1
+				unsigned char y_max_endstop=PIO_Get(&Y_MAX_PIN);	//read IO
 				if(y_max_endstop && old_y_max_endstop && (current_block->steps_y > 0))
 				{
 					if(!is_homing)
@@ -339,8 +391,8 @@ void stepper_timer(void)
 			motor_setdir(Z_AXIS, INVERT_Z_DIR);
 			CHECK_ENDSTOPS
 			{
-				#if Z_MIN_PIN > -1
-				unsigned char z_min_endstop=0;	//read IO
+				#if Z_MIN_ACTIV > -1
+				unsigned char z_min_endstop=PIO_Get(&Z_MIN_PIN);	//read IO
 				if(z_min_endstop && old_z_min_endstop && (current_block->steps_z > 0))
 				{
 					if(!is_homing)  
@@ -362,8 +414,8 @@ void stepper_timer(void)
 			motor_setdir(Z_AXIS, !INVERT_Z_DIR);
 			CHECK_ENDSTOPS
 			{
-				#if Z_MAX_PIN > -1
-				unsigned char z_max_endstop=0;	//read IO
+				#if Z_MAX_ACTIV > -1
+				unsigned char z_max_endstop=PIO_Get(&Z_MAX_PIN);	//read IO
 				if(z_max_endstop && old_z_max_endstop && (current_block->steps_z > 0))
 				{
 					if(!is_homing)
@@ -393,7 +445,8 @@ void stepper_timer(void)
 		}
 		#endif //!ADVANCE
 
-
+		//PIO_Clear(&time_check1);
+		
 		  
 		#ifdef ADVANCE
 		counter_e += current_block->steps_e;
@@ -529,4 +582,6 @@ void stepper_timer(void)
 			plan_discard_current_block();
 		}   
 	} 
+	motor_unstep();
+	PIO_Clear(&time_check1);
 }

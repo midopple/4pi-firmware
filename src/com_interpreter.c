@@ -14,6 +14,75 @@
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
+ 
+ // look here for descriptions of gcodes: http://linuxcnc.org/handbook/gcode/g-code.html
+// http://objects.reprap.org/wiki/Mendel_User_Manual:_RepRapGCodes
+
+//Implemented Codes
+//-------------------
+// G0  -> G1
+// G1  - Coordinated Movement X Y Z E
+// G2  - CW ARC
+// G3  - CCW ARC
+// G4  - Dwell S<seconds> or P<milliseconds>
+// G28 - Home all Axis
+// G90 - Use Absolute Coordinates
+// G91 - Use Relative Coordinates
+// G92 - Set current position to cordinates given
+
+//RepRap M Codes
+// M104 - Set extruder target temp
+// M105 - Read current temp
+// M106 - Fan on
+// M107 - Fan off
+// M109 - Wait for extruder current temp to reach target temp.
+// M114 - Display current position
+
+//Custom M Codes
+// M20  - List SD card
+// M21  - Init SD card
+// M22  - Release SD card
+// M23  - Select SD file (M23 filename.g)
+// M24  - Start/resume SD print
+// M25  - Pause SD print
+// M26  - Set SD position in bytes (M26 S12345)
+// M27  - Report SD print status
+// M28  - Start SD write (M28 filename.g)
+// M29  - Stop SD write
+//   -  <filename> - Delete file on sd card
+// M42  - Set output on free pins, on a non pwm pin (over pin 13 on an arduino mega) use S255 to turn it on and S0 to turn it off. Use P to decide the pin (M42 P23 S255) would turn pin 23 on
+// M80  - Turn on Power Supply
+// M81  - Turn off Power Supply
+// M82  - Set E codes absolute (default)
+// M83  - Set E codes relative while in Absolute Coordinates (G90) mode
+// M84  - Disable steppers until next move, 
+//        or use S<seconds> to specify an inactivity timeout, after which the steppers will be disabled.  S0 to disable the timeout.
+// M85  - Set inactivity shutdown timer with parameter S<seconds>. To disable set zero (default)
+// M92  - Set axis_steps_per_unit - same syntax as G92
+// M93  - Send axis_steps_per_unit
+// M115	- Capabilities string
+// M119 - Show Endstopper State 
+// M140 - Set bed target temp
+// M190 - Wait for bed current temp to reach target temp.
+// M201 - Set maximum acceleration in units/s^2 for print moves (M201 X1000 Y1000)
+// M202 - Set maximum feedrate that your machine can sustain (M203 X200 Y200 Z300 E10000) in mm/sec
+// M203 - Set temperture monitor to Sx
+// M204 - Set default acceleration: S normal moves T filament only moves (M204 S3000 T7000) in mm/sec^2
+// M205 - advanced settings:  minimum travel speed S=while printing T=travel only,  X=maximum xy jerk, Z=maximum Z jerk
+// M206 - set additional homing offset
+
+// M220 - set speed factor override percentage S=factor in percent 
+// M221 - set extruder multiply factor S100 --> original Extrude Speed 
+
+// M301 - Set PID parameters P I and D
+// M303 - PID relay autotune S<temperature> sets the target temperature. (default target temperature = 150C)
+
+// M400 - Finish all moves
+
+// M500 - stores paramters in EEPROM
+// M501 - reads parameters from EEPROM (if you need to reset them after you changed them temporarily).
+// M502 - reverts to the default "factory settings". You still need to store them in EEPROM afterwards if you want to.
+// M503 - Print settings
 
 
 #include <board.h>
@@ -33,6 +102,7 @@
 #include "com_interpreter.h"
 #include "heaters.h"
 #include "planner.h"
+#include "stepper_control.h"
 
 
 extern void motor_enaxis(unsigned char axis, unsigned char en);
@@ -62,13 +132,14 @@ unsigned long max_inactive_time = 0;
 unsigned long stepper_inactive_time = 0;
 
 unsigned char relative_mode = 0;
-volatile int feedmultiply=100; //100->original / 200 -> Factor 2 / 50 -> Factor 0.5
-int saved_feedmultiply = 0;
+volatile signed short feedmultiply=100; //100->original / 200 -> Factor 2 / 50 -> Factor 0.5
+signed short saved_feedmultiply = 0;
 volatile char feedmultiplychanged=0;
-volatile int extrudemultiply=100; //100->1 200->2
+volatile signed short extrudemultiply=100; //100->1 200->2
 
 unsigned char active_extruder = 0;		//0 --> Exteruder 1 / 1 --> Extruder 2
 unsigned char tmp_extruder = 0;
+
 
 extern volatile unsigned long timestamp;
 
@@ -220,13 +291,14 @@ unsigned char code_seen(char code)
   return (strchr_pointer != NULL);  //Return True if a character was found
 }
 
+
 //------------------------------------------------
 // CHECK COMMAND AND CONVERT VALUES
 //------------------------------------------------
 void process_commands()
 {
   unsigned long codenum; //throw away variable
-  char *starpos = NULL;
+  //char *starpos = NULL;
   unsigned char cnt_c = 0;
 
   if(code_seen('G'))
@@ -252,16 +324,56 @@ void process_commands()
         return;  
       case 4: // G4 dwell
 		codenum = 0;
-        if(code_seen('P')) codenum = code_value(); // milliseconds to wait
-        if(code_seen('S')) codenum = code_value() * 1000; // seconds to wait
-        codenum += timestamp;  // keep track of when we started waiting
-        st_synchronize();  // wait for all movements to finish
-        while(timestamp  < codenum )
+		if(code_seen('P')) codenum = code_value(); // milliseconds to wait
+		if(code_seen('S')) codenum = code_value() * 1000; // seconds to wait
+		codenum += timestamp;  // keep track of when we started waiting
+		st_synchronize();  // wait for all movements to finish
+
+		while(timestamp  < codenum )
 		{
-			
-        }
-        break;
+
+		}
+		break;
       case 28: //G28 Home all Axis one at a time
+	    saved_feedrate = feedrate;
+        saved_feedmultiply = feedmultiply;
+        previous_millis_cmd = timestamp;
+        
+        feedmultiply = 100;    
+      
+        enable_endstops(1);
+      
+        /*
+		for(cnt_c=0; cnt_c < NUM_AXIS; cnt_c++) 
+        {
+          destination[cnt_c] = current_position[cnt_c];
+        }
+		*/
+        feedrate = 0;
+        is_homing = 1;
+
+        home_all_axis = !((code_seen(axis_codes[0])) || (code_seen(axis_codes[1])) || (code_seen(axis_codes[2])));
+
+        if((home_all_axis) || (code_seen(axis_codes[X_AXIS]))) 
+          homing_routine(X_AXIS);
+
+        if((home_all_axis) || (code_seen(axis_codes[Y_AXIS]))) 
+          homing_routine(Y_AXIS);
+
+        if((home_all_axis) || (code_seen(axis_codes[Z_AXIS]))) 
+          homing_routine(Z_AXIS);
+        
+        #ifdef ENDSTOPS_ONLY_FOR_HOMING
+            enable_endstops(0);
+      	#endif
+      
+        is_homing = 0;
+        feedrate = saved_feedrate;
+        feedmultiply = saved_feedmultiply;
+      
+        previous_millis_cmd = timestamp;
+		
+		
         break;
       case 90: // G90
 		relative_mode = 0;
@@ -313,7 +425,6 @@ void process_commands()
 				usb_printf("ok T:%u @%u B:%u",heaters[tmp_extruder].akt_temp,heaters[tmp_extruder].pwm,bed_heater.akt_temp);
 			else
 				usb_printf("ok T:%u @%u B:%u",heaters[0].akt_temp,heaters[0].pwm,bed_heater.akt_temp);
-
         return;
         //break;
       case 109: // M109 - Wait for extruder heater to reach target.
