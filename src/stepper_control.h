@@ -38,7 +38,14 @@
  
  
  
- //void stepper_timer(void);
+ extern const Pin X_MIN_PIN;
+ extern const Pin Y_MIN_PIN;
+ extern const Pin Z_MIN_PIN;
+ extern const Pin X_MAX_PIN;
+ extern const Pin Y_MAX_PIN;
+ extern const Pin Z_MAX_PIN;
+ 
+ 
  void ConfigureTc0_Stepper(void);
  void stepper_setup(void);
  void enable_endstops(unsigned char check);

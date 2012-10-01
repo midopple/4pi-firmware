@@ -298,6 +298,7 @@ unsigned char code_seen(char code)
 void process_commands()
 {
   unsigned long codenum; //throw away variable
+  unsigned char read_endstops[6] = {0,0,0,0,0,0};
   //char *starpos = NULL;
   unsigned char cnt_c = 0;
 
@@ -428,12 +429,64 @@ void process_commands()
         return;
         //break;
       case 109: // M109 - Wait for extruder heater to reach target.
+		if(tmp_extruder < MAX_EXTRUDER)
+		{
+			if (code_seen('S')) heaters[tmp_extruder].target_temp = code_value();
 
+			codenum = timestamp; 
+
+			/* See if we are heating up or cooling down */
+			 // true if heating, false if cooling
+			unsigned char target_direction = (heaters[tmp_extruder].akt_temp < heaters[tmp_extruder].target_temp); 
+
+		#ifdef TEMP_RESIDENCY_TIME
+			long residencyStart;
+			residencyStart = -1;
+			/* continue to loop until we have reached the target temp   
+			_and_ until TEMP_RESIDENCY_TIME hasn't passed since we reached it */
+			while( (target_direction ? (heaters[tmp_extruder].akt_temp < heaters[tmp_extruder].target_temp) : (heaters[tmp_extruder].akt_temp > heaters[tmp_extruder].target_temp))
+			|| (residencyStart > -1 && (timestamp - residencyStart) < TEMP_RESIDENCY_TIME*1000) )
+			{
+		#else
+			while ( target_direction ? (heaters[tmp_extruder].akt_temp < heaters[tmp_extruder].target_temp) : (heaters[tmp_extruder].akt_temp > heaters[tmp_extruder].target_temp) ) 
+			{
+		#endif
+				if( (timestamp - codenum) > 1000 ) //Print Temp Reading every 1 second while heating up/cooling down
+				{
+					usb_printf("ok T:%u",heaters[tmp_extruder].akt_temp);
+					codenum = timestamp;
+				}
+				#ifdef TEMP_RESIDENCY_TIME
+				/* start/restart the TEMP_RESIDENCY_TIME timer whenever we reach target temp for the first time
+				or when current temp falls outside the hysteresis after target temp was reached */
+				if (   (residencyStart == -1 &&  target_direction && heaters[tmp_extruder].akt_temp >= heaters[tmp_extruder].target_temp)
+				|| (residencyStart == -1 && !target_direction && heaters[tmp_extruder].akt_temp <= heaters[tmp_extruder].target_temp)
+				|| (residencyStart > -1 && labs(heaters[tmp_extruder].akt_temp) - heaters[tmp_extruder].target_temp > TEMP_HYSTERESIS) )
+				{
+					residencyStart = timestamp;
+				}
+				#endif
+			}
+		}
 		break;
 		
       case 190: // M190 - Wait for bed heater to reach target temperature.
+		
+		if (code_seen('S')) bed_heater.target_temp = code_value();
+		codenum = timestamp; 
+		while(bed_heater.akt_temp < bed_heater.target_temp) 
+		{
+			if( (timestamp - codenum) > 1000 ) //Print Temp Reading every 1 second while heating up.
+			{
+				if(tmp_extruder < MAX_EXTRUDER)
+					usb_printf("T:%u B:%u",heaters[tmp_extruder].akt_temp,bed_heater.akt_temp);
+				else
+					usb_printf("T:%u B:%u",heaters[0].akt_temp,bed_heater.akt_temp);
+				
+				codenum = timestamp; 
+			}
+		}
 		break;
-
       case 106: //M106 Fan On
 
         break;
@@ -493,6 +546,26 @@ void process_commands()
         usb_printf("FIRMWARE_NAME: Sprinter 4pi PROTOCOL_VERSION:1.0 MACHINE_TYPE:Prusa EXTRUDER_COUNT:1\r\n");
         break;
 	  case 119: // M119 show endstop state
+		#if (X_MIN_ACTIV > -1)
+			read_endstops[0] = PIO_Get(&X_MIN_PIN);
+      	#endif
+      	#if (X_MAX_ACTIV > -1)
+			read_endstops[1] = PIO_Get(&Y_MIN_PIN);
+      	#endif
+      	#if (Y_MIN_ACTIV > -1)
+			read_endstops[2] = PIO_Get(&Z_MIN_PIN);
+      	#endif
+      	#if (Y_MAX_ACTIV > -1)
+			read_endstops[3] = PIO_Get(&X_MAX_PIN);
+      	#endif
+      	#if (Z_MIN_ACTIV > -1)
+			read_endstops[4] = PIO_Get(&Y_MAX_PIN);
+      	#endif
+      	#if (Z_MAX_ACTIV > -1)
+			read_endstops[5] = PIO_Get(&Z_MAX_PIN);
+      	#endif
+      
+        usb_printf("Xmin:%d Ymin:%d Zmin:%d / Xmax:%d Ymax:%d Zmax:%d",read_endstops[0],read_endstops[1],read_endstops[2],read_endstops[3],read_endstops[4],read_endstops[5]);
 		break;
 	  case 201: // M201  Set maximum acceleration in units/s^2 for print moves (M201 X1000 Y1000)
 

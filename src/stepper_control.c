@@ -126,33 +126,6 @@ volatile unsigned char old_z_min_endstop=0;
 volatile unsigned char old_z_max_endstop=0;
 
 
-//------------------------------------------------------------------------------
-/// Interrupt handler for TC0 interrupt --> Stepper.
-//------------------------------------------------------------------------------
-/*
-void TC0_IrqHandler(void)
-{
-    volatile unsigned int dummy;
-    // Clear status bit to acknowledge interrupt
-    
-	PIO_Set(&time_check2);
-    
-    dummy = AT91C_BASE_TC0->TC_SR;
-    if(dummy & AT91C_TC_CPCS)
-	{
-		//Function need 3 µs up to 5µs
-		stepper_timer();
-		motor_unstep();
-    }
-    if(dummy & AT91C_TC_CPBS){
-        //This line is not called ???
-		motor_unstep();
-    }
-
-	PIO_Clear(&time_check2);	
-	//Time at move Steppers is 16 us
- }
-*/
 
 void stepper_setup(void)
 {
@@ -252,8 +225,11 @@ void trapezoid_generator_reset()
 
 // "The Stepper Driver Interrupt" - This timer interrupt is the workhorse.  
 // It pops blocks from the block_buffer and executes them by pulsing the stepper pins appropriately. 
+// Time for ISR is at the moment 14 us --> :-( need to be faster 
+//------------------------------------------------------------------------------
+/// Interrupt handler for TC0 interrupt --> Stepper.
+//------------------------------------------------------------------------------
 void TC0_IrqHandler(void)
-//void stepper_timer(void)
 {        
 	volatile unsigned int dummy;
 	
@@ -261,6 +237,11 @@ void TC0_IrqHandler(void)
     
     // Clear status bit to acknowledge interrupt
     dummy = AT91C_BASE_TC0->TC_SR;
+	
+	if(dummy & AT91C_TC_CPCS)
+	{
+		//Not used at the moment
+	}
 		
 	// If there is no current block, attempt to pop one from the buffer
 	if (current_block == NULL)

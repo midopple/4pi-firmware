@@ -42,6 +42,7 @@ const Pin HOTEND2={1 <<  23, AT91C_BASE_PIOA, AT91C_ID_PIOA, PIO_OUTPUT_0, PIO_P
 const Pin AUX1={1 <<  25, AT91C_BASE_PIOA, AT91C_ID_PIOA, PIO_OUTPUT_0, PIO_PULLUP};
 const Pin AUX2={1 <<  24, AT91C_BASE_PIOA, AT91C_ID_PIOA, PIO_OUTPUT_0, PIO_PULLUP};
 
+extern const Pin time_check2;
 
 //Global struct for Heatercontrol
 heater_struct heaters[2];
@@ -225,11 +226,16 @@ void heater_on_off_control(heater_struct *hotend)
 // PWM with Timer 1
 //--------------------------------------------------
 
+//need 1,1 us  :-( :-(
+
 volatile unsigned char g_TC1_pwm_cnt = 0;
+volatile unsigned char pwm_io_is_off[2] = {0,0};
 //void TC1_IrqHandler(void)
 void heater_soft_pwm(void)
 {
-
+	PIO_Set(&time_check2);
+	PIO_Clear(&time_check2);
+	PIO_Set(&time_check2);
 	//volatile unsigned int dummy;
     // Clear status bit to acknowledge interrupt
     //dummy = AT91C_BASE_TC1->TC_SR;
@@ -238,21 +244,33 @@ void heater_soft_pwm(void)
 	//{
 		g_TC1_pwm_cnt+=2;
 		
+
 		if(heaters[0].soft_pwm_aktiv == 1)
 		{
-			if(g_pwm_value[0] == 0)
-				heater_switch(g_pwm_io_adr[0], 0);
-			else if(g_pwm_value[0] == 255)
-				heater_switch(g_pwm_io_adr[0], 1);
+			if(g_TC1_pwm_cnt == 0)
+			{
+				if(g_pwm_value[0] == 0)
+				{
+					heater_switch(g_pwm_io_adr[0], 0);
+					pwm_io_is_off[0] = 1;
+				}
+				else
+				{
+					heater_switch(g_pwm_io_adr[0], 1);
+					pwm_io_is_off[0] = 0;
+				}
+			}
 			else
 			{
-				if(g_TC1_pwm_cnt == 0)
-					heater_switch(g_pwm_io_adr[0], 1);
-				else if(g_TC1_pwm_cnt >= g_pwm_value[0])
+				if((g_TC1_pwm_cnt >= g_pwm_value[0]) && (pwm_io_is_off[0] == 0))
+				{
 					heater_switch(g_pwm_io_adr[0], 0);
+					pwm_io_is_off[0] = 1;
+				}
 			}
 		}
 	//}
+	PIO_Clear(&time_check2);
 }
 
 //--------------------------------------------------
