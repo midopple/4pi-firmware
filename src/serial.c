@@ -164,15 +164,10 @@ static void UsbDataReceived(unsigned int unused,
                             unsigned int received,
                             unsigned int remaining)
 {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
     // Check that data has been received successfully
     
     if (status == USBD_STATUS_SUCCESS) {
 
-<<<<<<< HEAD
 	
 	//if(received)
 		flag=1;
@@ -191,37 +186,6 @@ static void UsbDataReceived(unsigned int unused,
     
     }
     else {
-=======
-	int i;
-	const char* pDataPtr = (const char*)pBuffer;
-	
-	if (callback)
-	{
-		for (i=0;i<size;i++)
-			callback(pDataPtr[i]);
-	}
-}
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
-=======
-	
-	//if(received)
-		flag=1;
-	int i=0;
-	if(callback)
-		//printf("calling callback\r\n");
-		for(i=0;i<received;++i){
-			//printf("calling callback with %c\r\n",usbBuffer[i]);
-			callback(usbBuffer[i]);
-		}
-        CDCDSerialDriver_Read(usbBuffer,
-                              DATABUFFERSIZE,
-                              (TransferCallback) UsbDataReceived,
-                              0);
-    
-    
-    }
-    else {
->>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 
       //  TRACE_WARNING( "UsbDataReceived: Transfer error\n\r");
     }

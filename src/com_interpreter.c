@@ -102,14 +102,7 @@
 #include "com_interpreter.h"
 #include "heaters.h"
 #include "planner.h"
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-#include "usb.h"
-=======
->>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 #include "stepper_control.h"
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
 
 
 extern void motor_enaxis(unsigned char axis, unsigned char en);
@@ -139,28 +132,14 @@ unsigned long max_inactive_time = 0;
 unsigned long stepper_inactive_time = 0;
 
 unsigned char relative_mode = 0;
-<<<<<<< HEAD
-volatile int feedmultiply=100; //100->original / 200 -> Factor 2 / 50 -> Factor 0.5
-int saved_feedmultiply = 0;
-volatile char feedmultiplychanged=0;
-volatile int extrudemultiply=100; //100->1 200->2
-=======
 volatile signed short feedmultiply=100; //100->original / 200 -> Factor 2 / 50 -> Factor 0.5
 signed short saved_feedmultiply = 0;
 volatile char feedmultiplychanged=0;
 volatile signed short extrudemultiply=100; //100->1 200->2
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
 
 unsigned char active_extruder = 0;		//0 --> Exteruder 1 / 1 --> Extruder 2
 unsigned char tmp_extruder = 0;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
-=======
->>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 extern volatile unsigned long timestamp;
 
 //-----------------------------------------------------
@@ -195,13 +174,8 @@ unsigned char get_byte_from_UART(unsigned char *zeichen)
 //-----------------------------------------------------
 void ClearToSend()
 {
-<<<<<<< HEAD
-  previous_millis_cmd = timestamp;
-  usb_printf("ok\r\n");
-=======
 	previous_millis_cmd = timestamp;
 	usb_printf("ok\r\n");
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
 }
 
 //-----------------------------------------------------
@@ -339,15 +313,8 @@ unsigned char code_seen(char code)
 void process_commands()
 {
   unsigned long codenum; //throw away variable
-<<<<<<< HEAD
-<<<<<<< HEAD
-  char *starpos = NULL;
-=======
-=======
   char read_endstops[6] = {'X','X','X','X','X','X'};
->>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
   //char *starpos = NULL;
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
   unsigned char cnt_c = 0;
 
   if(code_seen('G'))
@@ -470,22 +437,10 @@ void process_commands()
 		if (code_seen('S')) bed_heater.target_temp = code_value();
         break;
       case 105: // M105
-<<<<<<< HEAD
-
-=======
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
 		  	if(tmp_extruder < MAX_EXTRUDER)
 				usb_printf("ok T:%u @%u B:%u\r\n",heaters[tmp_extruder].akt_temp,heaters[tmp_extruder].pwm,bed_heater.akt_temp);
 			else
-<<<<<<< HEAD
-				usb_printf("ok T:%u @%u B:%u",heaters[0].akt_temp,heaters[0].pwm,bed_heater.akt_temp);
-<<<<<<< HEAD
-
-=======
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
-=======
 				usb_printf("ok T:%u @%u B:%u\r\n",heaters[0].akt_temp,heaters[0].pwm,bed_heater.akt_temp);
->>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
         return;
         //break;
       case 109: // M109 - Wait for extruder heater to reach target.
@@ -596,18 +551,8 @@ void process_commands()
         }
         break;
       case 93: // M93 show current axis steps.
-<<<<<<< HEAD
-<<<<<<< HEAD
-		//usb_printf("ok X:%g Y:%g Z:%g E:%g",axis_steps_per_unit[0],axis_steps_per_unit[1],axis_steps_per_unit[2],axis_steps_per_unit[3]);
-		printf("ok X:%g Y:%g Z:%g E:%g",axis_steps_per_unit[0],axis_steps_per_unit[1],axis_steps_per_unit[2],axis_steps_per_unit[3]);
-=======
-		usb_printf("ok X:%d Y:%d Z:%d E:%d",(int)axis_steps_per_unit[0],(int)axis_steps_per_unit[1],(int)axis_steps_per_unit[2],(int)axis_steps_per_unit[3]);
-		//printf("ok X:%d Y:%d Z:%d E:%d",(int)axis_steps_per_unit[0],(int)axis_steps_per_unit[1],(int)axis_steps_per_unit[2],(int)axis_steps_per_unit[3]);
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
-=======
 		usb_printf("ok X:%d Y:%d Z:%d E:%d\r\n",(int)axis_steps_per_unit[0],(int)axis_steps_per_unit[1],(int)axis_steps_per_unit[2],(int)axis_steps_per_unit[3]);
 		//printf("ok X:%d Y:%d Z:%d E:%d\r\n",(int)axis_steps_per_unit[0],(int)axis_steps_per_unit[1],(int)axis_steps_per_unit[2],(int)axis_steps_per_unit[3]);
->>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
         break;
 	  case 114: // M114 Display current position
 		usb_printf("X:%d Y:%d Z:%d E:%d\r\n",(int)current_position[0],(int)current_position[1],(int)current_position[2],(int)current_position[3]);
@@ -632,7 +577,7 @@ void process_commands()
 			read_endstops[4] = (PIO_Get(&Y_MAX_PIN) ^ Y_ENDSTOP_INVERT) + 48;
       	#endif
       	#if (Z_MAX_ACTIV > -1)
-			read_endstops[5] = (PIO_Get(&Z_MAX_PIN) ^ Z_ENDSTOP_INVERT) + 48
+			read_endstops[5] = (PIO_Get(&Z_MAX_PIN) ^ Z_ENDSTOP_INVERT) + 48; 
       	#endif
       
         usb_printf("Xmin:%c Ymin:%c Zmin:%c / Xmax:%c Ymax:%c Zmax:%c\r\n",read_endstops[0],read_endstops[1],read_endstops[2],read_endstops[3],read_endstops[4],read_endstops[5]);
@@ -746,15 +691,9 @@ void process_commands()
 		usb_printf("T%d\r\n",active_extruder);
     }
   }
-<<<<<<< HEAD
-  else{
-  
-      usb_printf("Unknown command: %s \r\n",cmdbuffer[bufindr]);
-=======
   else
   {
        usb_printf("Unknown command: %s \r\n",cmdbuffer[bufindr]);
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
   }
   
   ClearToSend();

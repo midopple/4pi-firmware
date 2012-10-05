@@ -1,0 +1,11 @@
+
+- Store Parameter to Flash
+- Make Soft Pwm for Heater 2, Ext 1 & 2	--> Done
+- Second Extruder	--> Done
+- SD Commands
+- Command for Motor Parameters
+- optimize systick routine
+- store settings to SD Card
+- Autotune for Extruder 0 & 1 (or 1 & 2 :-) )
+- ledtool.c for control the LED's
+

@@ -45,12 +45,6 @@ extern const Pin time_check2;
 //Global struct for Heatercontrol
 heater_struct heaters[2];	//MAX_EXTRUDERS ?
 heater_bed_struct bed_heater;
-<<<<<<< HEAD
-volatile unsigned char g_pwm_value[2] = {0,0};
-<<<<<<< HEAD
-=======
-volatile unsigned char g_pwm_io_adr[2] = {0,0};
-=======
 
 //-----------------------------------------------------
 /// SOFT Pwm for Heater 1 & 2 and Ext Pwm 1 & 2 like Fan
@@ -58,9 +52,7 @@ volatile unsigned char g_pwm_io_adr[2] = {0,0};
 volatile unsigned char g_pwm_value[4] = {0,0,0,0};
 volatile unsigned char g_pwm_io_adr[4] = {1,2,3,4};
 volatile unsigned char g_pwm_aktiv[4] = {0,0,0,0};
->>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
 
 //-------------------------
 // SETUP HEATERS IO
@@ -87,12 +79,6 @@ void heater_switch(unsigned char heater, unsigned char en)
 {
 	Pin FETPINS[]={BEDHEAT,HOTEND1,HOTEND2,AUX1,AUX2};
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-int temp2analog_thermistor(int celsius, const float beta, const float rs, const float r_inf) {
-	float r = r_inf*exp(beta/(celsius - ABS_ZERO));
-	return (int)(0.5 + ADC_VREF*r/(r + rs));
-=======
 	if(heater<0||heater>5)
 		return;
 	
@@ -100,7 +86,6 @@ int temp2analog_thermistor(int celsius, const float beta, const float rs, const 
 		PIO_Set(&(FETPINS[heater]));
 	else
 		PIO_Clear(&(FETPINS[heater]));
->>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 }
 
 
@@ -113,31 +98,6 @@ signed short temp2analog_thermistor_compute(signed short celsius, const float be
 	return (signed short)(0.5 + ADC_VREF*r/(r + rs));
 }
 
-<<<<<<< HEAD
-#else
-signed short temp2analog_thermistor(signed short celsius, const short table[][2], signed short numtemps) {
-    signed short raw = 0;
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
-    unsigned char i;
-    
-    for (i=1; i<numtemps; i++)
-    {
-      if (table[i][1] < celsius)
-      {
-        raw = table[i-1][0] + 
-          (celsius - table[i-1][1]) * 
-          (table[i][0] - table[i-1][0]) /
-          (table[i][1] - table[i-1][1]);
-      
-        break;
-      }
-    }
-
-    // Overflow: Set to last value in the table
-    if (i == numtemps) raw = table[i-1][0];
-
-    return /*3300 -*/ raw;
-=======
 //--------------------------------------------------
 // Convert temperatur to Analog with Tablefunction
 //--------------------------------------------------
@@ -163,60 +123,9 @@ signed short temp2analog_thermistor_table(signed short celsius, const short tabl
 	if (i == numtemps) raw = table[i-1][0];
 
 	return raw;
->>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 }
 
 
-<<<<<<< HEAD
-//-------------------------
-// Convert mV to °C
-//-------------------------
-#if defined (HEATER_USES_THERMISTOR) || defined (BED_USES_THERMISTOR)
-
-#if defined COMPUTE_THERMISTORS
-
-<<<<<<< HEAD
-int analog2temp_thermistor(int raw, const float beta, const float rs, const float r_inf) {
-	float r = rs/(ADC_VREF/(float)(raw))-1;
-	return (int)(0.5 + ABS_ZERO + beta/log( r/r_inf ));
-=======
-signed short analog2temp_thermistor(signed short raw, const float beta, const float rs, const float r_inf) {
-	float r = rs/(ADC_VREF/(float)(raw))-1;
-	return (signed short)(0.5 + ABS_ZERO + beta/log( r/r_inf ));
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
-}
-
-#else
-
-<<<<<<< HEAD
-int analog2temp_thermistor(int raw,const short table[][2], int numtemps) {
-    int celsius = 0;
-=======
-signed short analog2temp_thermistor(signed short raw,const short table[][2], signed short numtemps) {
-    signed short celsius = 0;
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
-    unsigned char i;
-    
-    //raw = 3300 - raw;
-
-    for (i=1; i<numtemps; i++)
-    {
-      if (table[i][0] > raw)
-      {
-        celsius  = table[i-1][1] + 
-          (raw - table[i-1][0]) * 
-          (table[i][1] - table[i-1][1]) /
-          (table[i][0] - table[i-1][0]);
-
-        break;
-      }
-    }
-
-    // Overflow: Set to last value in the table
-    if (i == numtemps) celsius = table[i-1][1];
-
-    return celsius;
-=======
 //--------------------------------------------
 // Convert mV to °C with Compute function
 //---------------------------------------------
@@ -266,7 +175,6 @@ signed short analog2temp_thermistor_table(signed short raw,const short table[][2
 	if (i == numtemps) celsius = table[i-1][1];
 
 	return celsius;
->>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 }
 
 
@@ -396,7 +304,7 @@ void init_heaters_values(void)
 
 //--------------------------------------------------
 // Soft PWM, runs every 100 us
-// need 2,42 us  
+// need 2,12 us  + 0,3 us per PWM channel
 //--------------------------------------------------
 volatile unsigned char g_TC1_pwm_cnt = 0;
 volatile unsigned char pwm_io_is_off[4] = {0,0,0,0};
@@ -477,85 +385,6 @@ void heater_on_off_control(heater_struct *hotend)
 	
 }
 
-<<<<<<< HEAD
-//--------------------------------------------------
-// PWM with Timer 1
-//--------------------------------------------------
-
-<<<<<<< HEAD
-volatile unsigned char g_TC1_pwm_cnt = 0;
-//void TC1_IrqHandler(void)
-void heater_soft_pwm(void)
-{
-
-	//volatile unsigned int dummy;
-    // Clear status bit to acknowledge interrupt
-    //dummy = AT91C_BASE_TC0->TC_SR;
-
-	g_TC1_pwm_cnt++;
-	
-	if(heaters[0].soft_pwm_aktiv == 1)
-	{
-		if(g_pwm_value[0] == 0)
-			heater_switch(heaters[0].io_adr, 0);
-		else if(g_pwm_value[0] == 255)
-			heater_switch(heaters[0].io_adr, 1);
-		else
-		{
-			if(g_TC1_pwm_cnt == 0)
-				heater_switch(heaters[0].io_adr, 1);
-			else if(g_TC1_pwm_cnt >= g_pwm_value[0])
-				heater_switch(heaters[0].io_adr, 0);
-=======
-//need 1,1 us  :-( :-(
-
-volatile unsigned char g_TC1_pwm_cnt = 0;
-volatile unsigned char pwm_io_is_off[2] = {0,0};
-//void TC1_IrqHandler(void)
-void heater_soft_pwm(void)
-{
-	PIO_Set(&time_check2);
-	PIO_Clear(&time_check2);
-	PIO_Set(&time_check2);
-	//volatile unsigned int dummy;
-    // Clear status bit to acknowledge interrupt
-    //dummy = AT91C_BASE_TC1->TC_SR;
-
-	//if(dummy & AT91C_TC_CPCS)
-	//{
-		g_TC1_pwm_cnt+=2;
-		
-
-		if(heaters[0].soft_pwm_aktiv == 1)
-		{
-			if(g_TC1_pwm_cnt == 0)
-			{
-				if(g_pwm_value[0] == 0)
-				{
-					heater_switch(g_pwm_io_adr[0], 0);
-					pwm_io_is_off[0] = 1;
-				}
-				else
-				{
-					heater_switch(g_pwm_io_adr[0], 1);
-					pwm_io_is_off[0] = 0;
-				}
-			}
-			else
-			{
-				if((g_TC1_pwm_cnt >= g_pwm_value[0]) && (pwm_io_is_off[0] == 0))
-				{
-					heater_switch(g_pwm_io_adr[0], 0);
-					pwm_io_is_off[0] = 1;
-				}
-			}
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
-		}
-	//}
-	PIO_Clear(&time_check2);
-}
-=======
->>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 
 //--------------------------------------------------
 // Tempcontrol with PID for Hotend
@@ -600,11 +429,7 @@ void heater_PID_control(heater_struct *hotend)
 		//printf("I1: %d ", hotend->temp_iState);
 		hotend->temp_iState = constrain(hotend->temp_iState, hotend->temp_iState_min, hotend->temp_iState_max);
 		//printf("I2: %d ", hotend->temp_iState);
-<<<<<<< HEAD
-		hotend->iTerm = (int)(((long)hotend->PID_I * hotend->temp_iState) / 256);
-=======
 		hotend->iTerm = (signed short)(((long)hotend->PID_I * hotend->temp_iState) / 256);
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
 		heater_duty += hotend->iTerm;
 	}
 	
@@ -667,24 +492,6 @@ void onoff_control_bed(void)
 //--------------------------------------------------
 void ConfigureTc_1(void)
 {
-<<<<<<< HEAD
-	unsigned int div;
-	unsigned int tcclks;
-
-	// Enable peripheral clock
-	AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_TC1;
-	unsigned int freq=20000; 
-	// Configure TC for a 20 kHz frequency and trigger on RC compare
-	TC_FindMckDivisor(freq, BOARD_MCK, &div, &tcclks);
-	TC_Configure(AT91C_BASE_TC1, tcclks | AT91C_TC_CPCTRG);
-	//AT91C_BASE_TC0->TC_RB = 6*((BOARD_MCK / div)/1000000); //6 uSec per step pulse 
-	AT91C_BASE_TC1->TC_RC = (BOARD_MCK / div) / freq; // timerFreq / desiredFreq
-
-	// Configure and enable interrupt on RC compare
-									 //TC1_IrqHandler
-	//IRQ_ConfigureIT(AT91C_ID_TC1, 0, TC1_IrqHandler);
-	AT91C_BASE_TC1->TC_IER = AT91C_TC_CPCS; //|AT91C_TC_CPBS;
-=======
 
 	// Enable peripheral clock
 	AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_TC1;
@@ -697,14 +504,8 @@ void ConfigureTc_1(void)
 	AT91C_BASE_TC1->TC_RC = (BOARD_MCK / 128) / freq; // timerFreq / desiredFreq
 
 	// Configure and enable interrupt on RC compare
-<<<<<<< HEAD
-	//IRQ_ConfigureIT(AT91C_ID_TC1, 2, TC1_IrqHandler);
-	AT91C_BASE_TC1->TC_IER = AT91C_TC_CPCS | AT91C_TC_CPBS;
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
-=======
 	IRQ_ConfigureIT(AT91C_ID_TC1, 2, TC1_IrqHandler);
 	AT91C_BASE_TC1->TC_IER = AT91C_TC_CPCS;
->>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 	IRQ_EnableIT(AT91C_ID_TC1);
 
 	// Start the counter if LED is enabled.
@@ -736,31 +537,17 @@ void manage_heaters(void)
 		//heater_on_off_control(&heaters[0]);
 		heater_PID_control(&heaters[0]);
 		g_pwm_value[0] = heaters[0].pwm;
-<<<<<<< HEAD
-=======
 		g_pwm_io_adr[0] = heaters[0].io_adr;
-<<<<<<< HEAD
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
-		//printf("gPWM: %d \n\r", g_pwm_value[0]);
-=======
 		g_pwm_aktiv[0] = heaters[0].soft_pwm_aktiv;
->>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 		hotend_timer = 1;
 	}
 	else if(hotend_timer == 1)
 	{
 		heater_on_off_control(&heaters[1]);
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-		g_pwm_io_adr[1] = heaters[1].io_adr;
->>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
-=======
 		//heater_PID_control(&heaters[1]);
 		g_pwm_value[1] = heaters[1].pwm;
 		g_pwm_io_adr[1] = heaters[1].io_adr;
 		g_pwm_aktiv[1] = heaters[1].soft_pwm_aktiv;
->>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 		hotend_timer = 0;
 	}
 }
