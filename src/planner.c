@@ -25,6 +25,7 @@
 #include <math.h>
 #include <string.h>
 
+#include "init_configuration.h"
 #include "com_interpreter.h"
 #include "arc_func.h"
 #include "planner.h"
@@ -34,6 +35,7 @@
 #include "stepper_control.h"
 >>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
 
+<<<<<<< HEAD
 #define DISABLE_X 0
 #define DISABLE_Y 0
 #define DISABLE_Z 0
@@ -64,6 +66,8 @@ const int dropsegments=5; //everything with less than this number of steps will 
 
 <<<<<<< HEAD
 =======
+=======
+>>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 
 extern void motor_enaxis(unsigned char axis, unsigned char en);
 
@@ -73,7 +77,7 @@ float destination[NUM_AXIS] = {0.0, 0.0, 0.0, 0.0};
 float current_position[NUM_AXIS] = {0.0, 0.0, 0.0, 0.0};
 float add_homing[3]={0,0,0};
 char axis_codes[NUM_AXIS] = {'X', 'Y', 'Z', 'E'};
-char axis_relative_modes[] = {0, 0, 0, 0};
+char axis_relative_modes[NUM_AXIS] = _AXIS_RELATIVE_MODES;
 float offset[3] = {0.0, 0.0, 0.0};
 
 <<<<<<< HEAD
@@ -94,6 +98,7 @@ unsigned char is_homing = 0;
 unsigned char home_all_axis = 1;
 
 unsigned long minsegmenttime = 20000;
+<<<<<<< HEAD
 float max_feedrate[NUM_AXIS]={400, 400, 2, 45}; // set the max speeds
 float homing_feedrate[] = {1500,1500,120};
 float axis_steps_per_unit[NUM_AXIS] = {80, 80, 3200/1.25,700};
@@ -117,12 +122,44 @@ unsigned int virtual_steps_x = 0;
 unsigned int virtual_steps_y = 0;
 unsigned int virtual_steps_z = 0;
 =======
+=======
+
+float max_feedrate[NUM_AXIS]=_MAX_FEEDRATE; // set the max speeds
+float homing_feedrate[3] = _HOMING_FEEDRATE;
+float axis_steps_per_unit[NUM_AXIS] = _AXIS_STEP_PER_UNIT;
+unsigned long max_acceleration_units_per_sq_second[NUM_AXIS] = _MAX_ACCELERATION_UNITS_PER_SQ_SECOND; // Use M201 to override by software
+float minimumfeedrate = DEFAULT_MINIMUMFEEDRATE;
+float acceleration = _ACCELERATION;         // Normal acceleration mm/s^2  THIS IS THE DEFAULT ACCELERATION for all moves. M204 SXXXX
+float retract_acceleration = _RETRACT_ACCELERATION; //  mm/s^2   filament pull-pack and push-forward  while standing still in the other axis M204 TXXXX
+float max_xy_jerk = _MAX_XY_JERK; //speed than can be stopped at once, if i understand correctly.
+float max_z_jerk = _MAX_Z_JERK;
+float max_e_jerk = _MAX_Z_JERK;
+float mintravelfeedrate = DEFAULT_MINTRAVELFEEDRATE;
+unsigned long axis_steps_per_sqr_second[NUM_AXIS] ;
+float move_acceleration = _ACCELERATION;         // Normal acceleration mm/s^2
+
+>>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 extern volatile signed short extrudemultiply; // Sets extrude multiply factor (in percent)
 
 unsigned short virtual_steps_x = 0;
 unsigned short virtual_steps_y = 0;
 unsigned short virtual_steps_z = 0;
 >>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
+
+unsigned char min_software_endstops = _MIN_SOFTWARE_ENDSTOPS;
+unsigned char max_software_endstops = _MAX_SOFTWARE_ENDSTOPS;
+
+signed short x_max_length = _X_MAX_LENGTH;
+signed short y_max_length = _Y_MAX_LENGTH;
+signed short z_max_length = _Z_MAX_LENGTH;
+
+const int dropsegments=5; //everything with less than this number of steps will be ignored as move and joined with the next movement
+
+const unsigned char DISABLE_X = _DISABLE_X;
+const unsigned char DISABLE_Y = _DISABLE_Y;
+const unsigned char DISABLE_Z = _DISABLE_Z;
+const unsigned char DISABLE_E = _DISABLE_E;
+
 
 extern volatile unsigned long timestamp;
 
@@ -152,6 +189,7 @@ static unsigned char G92_reset_previous_speed = 0;
 void get_coordinates()
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
   int i=0;
   
   for(i = 0; i < NUM_AXIS; i++)
@@ -169,11 +207,14 @@ void get_coordinates()
   printf("new POS:%d %d %d %d %d\n\r",(int)destination[0],(int)destination[1],(int)destination[2],(int)destination[3],(int)feedrate);
 =======
 	int i=0;
+=======
+	unsigned char i=0;
+>>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 
 	for(i = 0; i < NUM_AXIS; i++)
 	{
 		if(code_seen(axis_codes[i])) destination[i] = (float)code_value() + (axis_relative_modes[i] || relative_mode)*current_position[i];
-		else destination[i] = current_position[i];                                                       //Are these else lines really needed?
+		else destination[i] = current_position[i];
 	}
 
 	if(code_seen('F'))
@@ -280,9 +321,9 @@ void prepare_move()
 
 		if (max_software_endstops) 
 		{
-			if (destination[X_AXIS] > X_MAX_LENGTH) destination[X_AXIS] = X_MAX_LENGTH;
-			if (destination[Y_AXIS] > Y_MAX_LENGTH) destination[Y_AXIS] = Y_MAX_LENGTH;
-			if (destination[Z_AXIS] > Z_MAX_LENGTH) destination[Z_AXIS] = Z_MAX_LENGTH;
+			if (destination[X_AXIS] > x_max_length) destination[X_AXIS] = x_max_length;
+			if (destination[Y_AXIS] > y_max_length) destination[Y_AXIS] = y_max_length;
+			if (destination[Z_AXIS] > z_max_length) destination[Z_AXIS] = z_max_length;
 		}
 	}
 
@@ -367,6 +408,7 @@ void prepare_arc_move(char isclockwise)
 void kill(char debug)
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
   #if TEMP_0_PIN > -1
     heaters[0].target_temp = 0;
 	heaters[1].target_temp = 0;
@@ -385,22 +427,29 @@ void kill(char debug)
   
 =======
 	#if TEMP_0_PIN > -1
+=======
+>>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 	heaters[0].target_temp = 0;
 	heaters[1].target_temp = 0;
-	//WRITE(HEATER_0_PIN,LOW);
-	#endif
+	heater_switch(1, 0);	//Heater 0
+	heater_switch(2, 0);	//Heater 1
 
-	#if TEMP_1_PIN > -1
 	bed_heater.target_temp = 0;
-	//if(HEATER_1_PIN > -1) WRITE(HEATER_1_PIN,LOW);
-	#endif
+	heater_switch(0, 0);	//BED
 
 	disable_x();
 	disable_y();
 	disable_z();
 	disable_e();
+<<<<<<< HEAD
 
 >>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
+=======
+	disable_e1();
+	
+	if(debug)
+		printf("Kill Command\n\r");
+>>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
    
 }
 
@@ -429,6 +478,7 @@ void manage_inactivity(char debug)
 		disable_y(); 
 		disable_z(); 
 		disable_e(); 
+		disable_e1();
 	}
 	check_axes_activity();
 }
@@ -440,61 +490,62 @@ void homing_routine(unsigned char axis)
 {
   signed short min_pin, max_pin, home_dir, max_length=0, home_bounce=0;
 
-  switch(axis){
-    case X_AXIS:
-      min_pin = X_MIN_ACTIV;
-      max_pin = X_MAX_ACTIV;
-      home_dir = X_HOME_DIR;
-      max_length = X_MAX_LENGTH;
-      home_bounce = 10;
-      break;
-    case Y_AXIS:
-      min_pin = Y_MIN_ACTIV;
-      max_pin = Y_MAX_ACTIV;
-      home_dir = Y_HOME_DIR;
-      max_length = Y_MAX_LENGTH;
-      home_bounce = 10;
-      break;
-    case Z_AXIS:
-      min_pin = Z_MIN_ACTIV;
-      max_pin = Z_MAX_ACTIV;
-      home_dir = Z_HOME_DIR;
-      max_length = Z_MAX_LENGTH;
-      home_bounce = 4;
-      break;
-    default:
-      //never reached
-      break;
-  }
+	switch(axis)
+	{
+		case X_AXIS:
+			min_pin = X_MIN_ACTIV;
+			max_pin = X_MAX_ACTIV;
+			home_dir = X_HOME_DIR;
+			max_length = x_max_length;
+			home_bounce = 10;
+		break;
+		case Y_AXIS:
+			min_pin = Y_MIN_ACTIV;
+			max_pin = Y_MAX_ACTIV;
+			home_dir = Y_HOME_DIR;
+			max_length = y_max_length;
+			home_bounce = 10;
+		break;
+		case Z_AXIS:
+			min_pin = Z_MIN_ACTIV;
+			max_pin = Z_MAX_ACTIV;
+			home_dir = Z_HOME_DIR;
+			max_length = z_max_length;
+			home_bounce = 4;
+		break;
+		default:
+			//never reached
+		break;
+	}
 
-  if ((min_pin > (-1) && home_dir==(-1)) || (max_pin > (-1) && home_dir==1))
-  {
-    current_position[axis] = (-1.5) * max_length * home_dir;
-    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-    destination[axis] = 0;
-    feedrate = homing_feedrate[axis];
-    prepare_move();
-    st_synchronize();
+	if ((min_pin > (-1) && home_dir==(-1)) || (max_pin > (-1) && home_dir==1))
+	{
+		current_position[axis] = (-1.5) * max_length * home_dir;
+		plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+		destination[axis] = 0;
+		feedrate = homing_feedrate[axis];
+		prepare_move();
+		st_synchronize();
 
-    current_position[axis] = home_bounce/2 * home_dir;
-    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-    destination[axis] = 0;
-    prepare_move();
-    st_synchronize();
+		current_position[axis] = home_bounce/2 * home_dir;
+		plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+		destination[axis] = 0;
+		prepare_move();
+		st_synchronize();
 
-    current_position[axis] = (home_bounce * home_dir)*(-1);
-    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-    destination[axis] = 0;
-    feedrate = homing_feedrate[axis]/2;
-    prepare_move();
-    st_synchronize();
+		current_position[axis] = (home_bounce * home_dir)*(-1);
+		plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+		destination[axis] = 0;
+		feedrate = homing_feedrate[axis]/2;
+		prepare_move();
+		st_synchronize();
 
-    current_position[axis] = (home_dir == (-1)) ? 0 : max_length;
-    current_position[axis] += add_homing[axis];
-    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-    destination[axis] = current_position[axis];
-    feedrate = 0;
-  }
+		current_position[axis] = (home_dir == (-1)) ? 0 : max_length;
+		current_position[axis] += add_homing[axis];
+		plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+		destination[axis] = current_position[axis];
+		feedrate = 0;
+	}
 }
 
 
@@ -536,6 +587,7 @@ void homing_routine(unsigned char axis)
 void st_wake_up() 
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
   //  TCNT1 = 0;
   //if(busy == 0) 
   //ENABLE_STEPPER_DRIVER_INTERRUPT();  
@@ -544,6 +596,10 @@ void st_wake_up()
 	//if(busy == 0) 
 	//ENABLE_STEPPER_DRIVER_INTERRUPT();  
 >>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
+=======
+	//if(busy == 0) 
+		//Start Timer ?
+>>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 }
 
 
@@ -1160,6 +1216,7 @@ void check_axes_activity()
 	unsigned char y_active = 0;  
 	unsigned char z_active = 0;
 	unsigned char e_active = 0;
+	
 	block_t *block;
 
 	if(block_buffer_tail != block_buffer_head) 
@@ -1179,8 +1236,12 @@ void check_axes_activity()
 	if((DISABLE_X) && (x_active == 0)) disable_x();
 	if((DISABLE_Y) && (y_active == 0)) disable_y();
 	if((DISABLE_Z) && (z_active == 0)) disable_z();
+<<<<<<< HEAD
 	if((DISABLE_E) && (e_active == 0)) disable_e();
 >>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
+=======
+	if((DISABLE_E) && (e_active == 0)) {disable_e(); disable_e1();}
+>>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 }
 
 
@@ -1527,7 +1588,7 @@ void plan_buffer_line(float x, float y, float z, float e, float feed_rate, unsig
   st_wake_up();
 =======
 	// Calculate the buffer head after we push this byte
-	int next_buffer_head = next_block_index(block_buffer_head);
+	short next_buffer_head = next_block_index(block_buffer_head);
 
 	printf("next head:%u\n\r",next_buffer_head);
 
@@ -1613,6 +1674,7 @@ void plan_buffer_line(float x, float y, float z, float e, float feed_rate, unsig
 	if(block->steps_e != 0)
 	{
 		enable_e();
+		enable_e1();
 		delayMicroseconds(DELAY_ENABLE);
 	}
 	#else
@@ -1621,7 +1683,7 @@ void plan_buffer_line(float x, float y, float z, float e, float feed_rate, unsig
 	if(block->steps_x != 0) enable_x();
 	if(block->steps_y != 0) enable_y();
 	if(block->steps_z != 0) enable_z();
-	if(block->steps_e != 0) enable_e();
+	if(block->steps_e != 0) { enable_e(); enable_e1(); }
 	#endif 
 
 	if (block->steps_e == 0)
@@ -1685,13 +1747,13 @@ void plan_buffer_line(float x, float y, float z, float e, float feed_rate, unsig
 	// Calculate and limit speed in mm/sec for each axis
 	float current_speed[4];
 	float speed_factor = 1.0; //factor <=1 do decrease speed
-	int cnt_i;
+	unsigned char cnt_c;
 
-	for(cnt_i=0; cnt_i < 3; cnt_i++) 
+	for(cnt_c=0; cnt_c < 3; cnt_c++) 
 	{
-		current_speed[cnt_i] = delta_mm[cnt_i] * inverse_second;
-		if(fabs(current_speed[cnt_i]) > max_feedrate[cnt_i])
-			speed_factor = min(speed_factor, max_feedrate[cnt_i] / fabs(current_speed[cnt_i]));
+		current_speed[cnt_c] = delta_mm[cnt_c] * inverse_second;
+		if(fabs(current_speed[cnt_c]) > max_feedrate[cnt_c])
+			speed_factor = min(speed_factor, max_feedrate[cnt_c] / fabs(current_speed[cnt_c]));
 	}
 
 		current_speed[E_AXIS] = delta_mm[E_AXIS] * inverse_second;
@@ -1702,9 +1764,9 @@ void plan_buffer_line(float x, float y, float z, float e, float feed_rate, unsig
 	// Correct the speed  
 	if( speed_factor < 1.0) 
 	{
-		for(cnt_i=0; cnt_i < 4; cnt_i++)
+		for(cnt_c=0; cnt_c < 4; cnt_c++)
 		{
-			current_speed[cnt_i] *= speed_factor;
+			current_speed[cnt_c] *= speed_factor;
 		}
 		block->nominal_speed *= speed_factor;
 		block->nominal_rate *= speed_factor;
@@ -1887,13 +1949,17 @@ void plan_buffer_line(float x, float y, float z, float e, float feed_rate, unsig
 >>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
 }
 
-int calc_plannerpuffer_fill(void)
+short calc_plannerpuffer_fill(void)
 {
+<<<<<<< HEAD
 <<<<<<< HEAD
   int moves_queued=(block_buffer_head-block_buffer_tail + BLOCK_BUFFER_SIZE) & (BLOCK_BUFFER_SIZE - 1);
   return(moves_queued);
 =======
 	int moves_queued=(block_buffer_head-block_buffer_tail + BLOCK_BUFFER_SIZE) & (BLOCK_BUFFER_SIZE - 1);
+=======
+	short moves_queued=(block_buffer_head-block_buffer_tail + BLOCK_BUFFER_SIZE) & (BLOCK_BUFFER_SIZE - 1);
+>>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 	return(moves_queued);
 >>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
 }

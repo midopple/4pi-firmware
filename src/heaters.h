@@ -20,6 +20,7 @@
  
 */
 
+<<<<<<< HEAD
 #define THERMISTORHEATER	1
 #define THERMISTORBED		1
 
@@ -86,8 +87,31 @@
 #define max(a,b) ((a)>(b)?(a):(b))
 
 //#include "Configuration.h"
+=======
+#define THERMISTORTYP_TABLE_1 	1
+#define THERMISTORTYP_TABLE_2 	2
+#define THERMISTORTYP_TABLE_3 	3
+#define THERMISTORTYP_TABLE_4 	4
+#define THERMISTORTYP_TABLE_5 	5
+#define THERMISTORTYP_TABLE_6 	6
+#define THERMISTORTYP_TABLE_7 	7
+
+#define THERMISTORTYP_COMPUTE_11 	11
+#define THERMISTORTYP_COMPUTE_12 	12
+#define THERMISTORTYP_COMPUTE_13 	13
+#define THERMISTORTYP_COMPUTE_14 	14
+#define THERMISTORTYP_COMPUTE_15 	15
+#define THERMISTORTYP_COMPUTE_16 	16
+#define THERMISTORTYP_COMPUTE_17 	17
+
+#define AD595_TYP_50 	50
+
+
+//#include "init_configuration.h"
+>>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 //#include "thermistortables.h"
 
+/*
 #if defined HEATER_USES_THERMISTOR
 #if defined COMPUTE_THERMISTORS
 #define temp2analogh( c ) temp2analog_thermistor(c,E_BETA, E_RS, E_R_INF)
@@ -119,7 +143,9 @@
 #define temp2analogBed( c ) temp2analog_max6675(c)
 #define analog2tempBed( c ) analog2temp_max6675(c)
 #endif
+*/
 
+<<<<<<< HEAD
 #if defined (HEATER_USES_THERMISTOR) || defined (BED_USES_THERMISTOR)
 #if defined COMPUTE_THERMISTORS
 <<<<<<< HEAD
@@ -138,22 +164,25 @@ signed short analog2temp_thermistor(signed short raw,const short table[][2], sig
 >>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837
 #endif
 #endif
+=======
+>>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84
 
-#if defined (HEATER_USES_AD595) || defined (BED_USES_AD595)
-signed short temp2analog_ad595(signed short celsius);
-signed short analog2temp_ad595(signed short raw);
-#endif
+signed short temp2analog_thermistor_compute(signed short celsius, const float beta, const float rs, const float r_inf);
+signed short analog2temp_thermistor_compute(signed short raw, const float beta, const float rs, const float r_inf);
 
-#if defined (HEATER_USES_MAX6675) || defined (BED_USES_MAX6675)
-signed short temp2analog_max6675(signed short celsius);
-signed short analog2temp_max6675(signed short raw);
-#endif
+signed short temp2analog_thermistor_table(signed short celsius, const short table[][2], signed short numtemps);
+signed short analog2temp_thermistor_table(signed short raw,const short table[][2], signed short numtemps);
+
+
+#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
+#define min(a,b) ((a)<(b)?(a):(b))
+#define max(a,b) ((a)>(b)?(a):(b))
 
 
 void manage_heaters(void);
 void init_heaters_values(void);
-void heater_soft_pwm(void);
-
+void heater_switch(unsigned char heater, unsigned char en);
+//void heater_soft_pwm(void);
 
 
 typedef struct {
@@ -175,12 +204,16 @@ typedef struct {
 	signed short dTerm;
 	signed short temp_iState_min;
 	signed short temp_iState_max;
+	
+	signed short thermistor_type;
+	
 
 } heater_struct;
 
 typedef struct {
 	signed short target_temp;
 	signed short akt_temp;
+	signed short thermistor_type;
 
 } heater_bed_struct;
 

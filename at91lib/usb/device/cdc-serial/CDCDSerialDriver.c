@@ -1,4 +1,7 @@
 <<<<<<< HEAD:at91lib/usb/device/cdc-serial/CDCDSerialDriver.c
+<<<<<<< HEAD:at91lib/usb/device/cdc-serial/CDCDSerialDriver.c
+=======
+>>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84:at91lib/usb/device/cdc-serial/CDCDSerialDriver.c
 /* ----------------------------------------------------------------------------
  *         ATMEL Microcontroller Software Support 
  * ----------------------------------------------------------------------------
@@ -303,6 +306,7 @@ void CDCDSerialDriver_SetSerialState(unsigned short serialState)
     }
 }
 
+<<<<<<< HEAD:at91lib/usb/device/cdc-serial/CDCDSerialDriver.c
 =======
 /* ----------------------------------------------------------------------------
  *         ATMEL Microcontroller Software Support 
@@ -650,3 +654,5 @@ void CDCDSerialDriver_SetSerialState(unsigned char port,
     }
 }
 >>>>>>> 6cff15ab4a851c4956e3844d36e1499ac463a837:at91lib/usb/device/composite/CDCDFunctionDriver.c
+=======
+>>>>>>> 869d3eae182a111fefb1748ce11961597cc1ae84:at91lib/usb/device/cdc-serial/CDCDSerialDriver.c
