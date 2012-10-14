@@ -22,13 +22,14 @@
 #include <stdlib.h>
 #include <irq/irq.h>
 #include <tc/tc.h>
-
+#include <math.h>
 
 #include "init_configuration.h"
+#include "parameters.h"
 #include "samadc.h"
 #include "heaters.h"
 #include "thermistortables.h"
-#include <math.h>
+#include "serial.h"
 
 #define HEATER_BED			0
 #define HEATER_HOTEND_1		1
@@ -40,7 +41,22 @@ const Pin HOTEND2={1 <<  23, AT91C_BASE_PIOA, AT91C_ID_PIOA, PIO_OUTPUT_0, PIO_P
 const Pin AUX1={1 <<  25, AT91C_BASE_PIOA, AT91C_ID_PIOA, PIO_OUTPUT_0, PIO_PULLUP};
 const Pin AUX2={1 <<  24, AT91C_BASE_PIOA, AT91C_ID_PIOA, PIO_OUTPUT_0, PIO_PULLUP};
 
+/// LED pin definition.
+const Pin PIN_LED1 = {1 << 22, AT91C_BASE_PIOC, AT91C_ID_PIOC, PIO_OUTPUT_0, PIO_DEFAULT};
+const Pin PIN_LED2 = {1 << 29, AT91C_BASE_PIOA, AT91C_ID_PIOA, PIO_OUTPUT_0, PIO_DEFAULT};
+const Pin PIN_LED3 = {1 << 28, AT91C_BASE_PIOA, AT91C_ID_PIOA, PIO_OUTPUT_0, PIO_DEFAULT};
+const Pin PIN_LED4 = {1 << 2 , AT91C_BASE_PIOA, AT91C_ID_PIOA, PIO_OUTPUT_0, PIO_DEFAULT};
+const Pin PIN_LED5 = {1 << 1 , AT91C_BASE_PIOC, AT91C_ID_PIOC, PIO_OUTPUT_0, PIO_DEFAULT};
+const Pin PIN_LED6 = {1 << 0 , AT91C_BASE_PIOA, AT91C_ID_PIOA, PIO_OUTPUT_0, PIO_DEFAULT};
+const Pin PIN_LED7 = {1 << 26, AT91C_BASE_PIOA, AT91C_ID_PIOA, PIO_OUTPUT_0, PIO_DEFAULT};
+const Pin PIN_LED8 = {1 << 20, AT91C_BASE_PIOC, AT91C_ID_PIOC, PIO_OUTPUT_0, PIO_DEFAULT};
+const Pin PIN_LED9 = {1 << 0 , AT91C_BASE_PIOC, AT91C_ID_PIOC, PIO_OUTPUT_0, PIO_DEFAULT};
+
+
 extern const Pin time_check2;
+extern volatile unsigned long timestamp;
+
+unsigned char autotune_active = false;
 
 //Global struct for Heatercontrol
 heater_struct heaters[2];	//MAX_EXTRUDERS ?
@@ -60,20 +76,26 @@ volatile unsigned char g_pwm_aktiv[4] = {0,0,0,0};
 void heaters_setup()
 {
 	Pin FETPINS[]={BEDHEAT,HOTEND1,HOTEND2,AUX1,AUX2};
+	Pin LEDPINS[]={PIN_LED1,PIN_LED2,PIN_LED3,PIN_LED4,PIN_LED5,PIN_LED6,PIN_LED7,PIN_LED8,PIN_LED9};
 
 	PIO_Configure(FETPINS,5);
+	PIO_Configure(LEDPINS,9);
 
 	unsigned short i;
 	
 	for(i=0;i<5;++i)
 		PIO_Clear(&(FETPINS[i]));
 
+	for(i=0;i<9;++i)
+		PIO_Clear(&(LEDPINS[i]));
+		
+	
 	init_heaters_values();	
 
 }
 
 //-------------------------
-// IO Function
+// IO Function for FET's
 //-------------------------
 void heater_switch(unsigned char heater, unsigned char en)
 {
@@ -86,6 +108,22 @@ void heater_switch(unsigned char heater, unsigned char en)
 		PIO_Set(&(FETPINS[heater]));
 	else
 		PIO_Clear(&(FETPINS[heater]));
+}
+
+//-------------------------
+// IO Function for LED's
+//-------------------------
+void LED_switch(unsigned char led, unsigned char en)
+{
+	Pin LEDPINS[]={PIN_LED1,PIN_LED2,PIN_LED3,PIN_LED4,PIN_LED5,PIN_LED6,PIN_LED7,PIN_LED8,PIN_LED9};
+
+	if(led<0||led>9)
+		return;
+	
+	if(en)
+		PIO_Set(&(LEDPINS[led]));
+	else
+		PIO_Clear(&(LEDPINS[led]));
 }
 
 
@@ -269,33 +307,33 @@ void init_heaters_values(void)
 	g_pwm_io_adr[0] = HEATER_HOTEND_1;
 	heaters[0].ad_cannel = 3;
 	heaters[0].pwm = 0;
-	heaters[0].soft_pwm_aktiv = HEATER_1_PWM;
-	heaters[0].PID_Kp = PID_PGAIN;
-	heaters[0].PID_I = PID_IGAIN;
-	heaters[0].PID_Kd = PID_DGAIN;
+	heaters[0].soft_pwm_aktiv = pa.heater_pwm_en[0];
+	heaters[0].PID_Kp = pa.heater_pTerm[0];
+	heaters[0].PID_I = pa.heater_iTerm[0];
+	heaters[0].PID_Kd = pa.heater_dTerm[0];
 	heaters[0].temp_iState = 0;
 	heaters[0].prev_temp = 0;
 	heaters[0].temp_iState_max = (256L * PID_INTEGRAL_DRIVE_MAX) / (signed short)heaters[0].PID_I;
 	heaters[0].temp_iState_min = heaters[0].temp_iState_max * (-1);
-	heaters[0].thermistor_type = THERMISTORHEATER;
+	heaters[0].thermistor_type = pa.heater_thermistor_type[0];
 
 	heaters[1].io_adr = HEATER_HOTEND_2;
 	g_pwm_io_adr[1] = HEATER_HOTEND_2;
 	heaters[1].ad_cannel = 1;
 	heaters[1].pwm = 0;
-	heaters[1].soft_pwm_aktiv = HEATER_2_PWM;
-	heaters[1].PID_Kp = PID_PGAIN;
-	heaters[1].PID_I = PID_IGAIN;
-	heaters[1].PID_Kd = PID_DGAIN;
+	heaters[1].soft_pwm_aktiv = pa.heater_pwm_en[1];
+	heaters[1].PID_Kp = pa.heater_pTerm[1];
+	heaters[1].PID_I = pa.heater_iTerm[1];
+	heaters[1].PID_Kd = pa.heater_dTerm[1];
 	heaters[1].temp_iState = 0;
 	heaters[1].prev_temp = 0;
 	heaters[1].temp_iState_max = (256L * PID_INTEGRAL_DRIVE_MAX) / (signed short)heaters[1].PID_I;
 	heaters[1].temp_iState_min = heaters[1].temp_iState_max * (-1);
-	heaters[1].thermistor_type = THERMISTORHEATER;
+	heaters[1].thermistor_type = pa.heater_thermistor_type[1];
 	
 	bed_heater.target_temp = 0;
 	bed_heater.akt_temp = 0;
-	bed_heater.thermistor_type = THERMISTORBED;
+	bed_heater.thermistor_type = pa.bed_thermistor_type;
 	
 	
 }
@@ -365,11 +403,14 @@ void heater_on_off_control(heater_struct *hotend)
 {
 	hotend->akt_temp = analog2temp_convert(adc_read(hotend->ad_cannel),hotend->thermistor_type);
 	
-	if(hotend->akt_temp < 4)
+	#ifdef MINTEMP
+	if(hotend->akt_temp < MINTEMP)
 	{
 		hotend->target_temp = 0;
 		heater_switch(hotend->io_adr, 0);
+		hotend->pwm = 0;
 	}
+	#endif
 		
 	if(hotend->akt_temp  > (hotend->target_temp+1))
 	{
@@ -423,6 +464,8 @@ void heater_PID_control(heater_struct *hotend)
 	const signed short H0 = min(HEATER_DUTY_FOR_SETPOINT(hotend->target_temp),HEATER_CURRENT);
 	heater_duty = H0 + hotend->pTerm;
 
+	//printf("P: %d ", hotend->pTerm);
+
 	if(abs(error) < 30)
 	{
 		hotend->temp_iState += error;
@@ -447,7 +490,7 @@ void heater_PID_control(heater_struct *hotend)
 	//printf("D: %d ", hotend->dTerm);
 	
 	heater_duty += hotend->dTerm;
-	//printf("PWM: %d \n", heater_duty);
+	//printf("PWM: %d \r\n", heater_duty);
 	
 	heater_duty = constrain(heater_duty, 0, HEATER_CURRENT);
 	
@@ -474,16 +517,19 @@ void onoff_control_bed(void)
 	{
 		bed_heater.target_temp = 0;
 		heater_switch(HEATER_BED, 0);
+		LED_switch(3,0);
 	}
 	#endif
 			
 	if(bed_heater.akt_temp  > bed_heater.target_temp)
 	{
 		heater_switch(HEATER_BED, 0);
+		LED_switch(3,0);
 	}
 	else if((bed_heater.akt_temp  < bed_heater.target_temp) && (bed_heater.target_temp > 0))
 	{
 		heater_switch(HEATER_BED, 1);
+		LED_switch(3,1);
 	}
 }
 
@@ -528,26 +574,224 @@ void manage_heaters(void)
 	{
 		//Call every 2 sec
 		onoff_control_bed();
+		
 		bed_timer = 0;
 	}
 	
 	if(hotend_timer == 0)
 	{
-		//Call every 200 ms
+		//Call every 500 ms
 		//heater_on_off_control(&heaters[0]);
-		heater_PID_control(&heaters[0]);
+    if(!autotune_active)
+		  heater_PID_control(&heaters[0]);
 		g_pwm_value[0] = heaters[0].pwm;
 		g_pwm_io_adr[0] = heaters[0].io_adr;
 		g_pwm_aktiv[0] = heaters[0].soft_pwm_aktiv;
+		
+		if(g_pwm_value[0] > 0)
+			LED_switch(4,1);
+		else
+			LED_switch(4,0);
+			
 		hotend_timer = 1;
 	}
 	else if(hotend_timer == 1)
 	{
 		heater_on_off_control(&heaters[1]);
-		//heater_PID_control(&heaters[1]);
+    //if(!autotune_active)
+		//  heater_PID_control(&heaters[1]);
 		g_pwm_value[1] = heaters[1].pwm;
 		g_pwm_io_adr[1] = heaters[1].io_adr;
 		g_pwm_aktiv[1] = heaters[1].soft_pwm_aktiv;
+		
+		if(g_pwm_value[1] > 0)
+			LED_switch(5,1);
+		else
+			LED_switch(5,0);
+		
 		hotend_timer = 0;
 	}
 }
+
+//-------------------- START PID AUTOTUNE ---------------------------
+// Based on PID relay test 
+// Thanks to Erik van der Zalm for this idea to use it for Marlin
+// Some information see:
+// http://brettbeauregard.com/blog/2012/01/arduino-pid-autotune-library/
+//------------------------------------------------------------------
+
+void PID_autotune(heater_struct *hotend, float PIDAT_test_temp)
+{
+  float PIDAT_input = 0;
+  float PIDAT_input_ave = 0;
+  unsigned char PIDAT_count_input = 0;
+
+  float PIDAT_max = 0.0;
+  float PIDAT_min = 250.0;
+ 
+  unsigned char PIDAT_PWM_val = HEATER_CURRENT;
+  
+  unsigned char PIDAT_cycles = 0;
+  unsigned char PIDAT_heating = true;
+
+  unsigned long PIDAT_temp_millis = timestamp;
+  unsigned long PIDAT_t1 = PIDAT_temp_millis;
+  unsigned long PIDAT_t2 = PIDAT_temp_millis;
+  unsigned long PIDAT_T_check_AI_val = PIDAT_temp_millis;
+
+  
+  long PIDAT_t_high = 0;
+  long PIDAT_t_low = 0;
+
+  long PIDAT_bias = HEATER_CURRENT/2;  
+  long PIDAT_d  =  HEATER_CURRENT/2;
+  
+  float PIDAT_Ku = 0, PIDAT_Tu = 0;
+  float PIDAT_Kp = 0, PIDAT_Ki = 0, PIDAT_Kd = 0;
+  
+  #define PIDAT_TIME_FACTOR ((HEATER_CHECK_INTERVAL * 256) / 1000)
+  
+  usb_printf("PID Autotune start\r\n");
+  printf("PID Autotune channel %u\r\n",hotend->ad_cannel);
+
+  autotune_active = true;  // disable PID while tuning
+
+  PIDAT_min = PIDAT_test_temp;
+
+  hotend->target_temp = (signed short)PIDAT_test_temp;
+  hotend->pwm = (unsigned char)PIDAT_PWM_val;
+  
+  #ifdef BED_USES_THERMISTOR
+    bed_heater.target_temp = 0;
+    heater_switch(HEATER_BED, 0);
+    LED_switch(3,0);
+  #endif
+  
+  for(;;) 
+  {
+     // Average 10 readings
+    if((timestamp - PIDAT_T_check_AI_val) > 100 )
+    {
+      PIDAT_T_check_AI_val = timestamp;
+      
+      PIDAT_input_ave += analog2temp_convert(adc_read(hotend->ad_cannel),hotend->thermistor_type);
+
+      PIDAT_count_input++;
+    }
+    
+    if(PIDAT_count_input >= 10 )
+    {
+      PIDAT_input = (float)PIDAT_input_ave / (float)PIDAT_count_input;
+      PIDAT_input_ave = 0;
+      PIDAT_count_input = 0;
+      
+      PIDAT_max=max(PIDAT_max,PIDAT_input);
+      PIDAT_min=min(PIDAT_min,PIDAT_input);
+
+      if(PIDAT_heating == true && PIDAT_input > PIDAT_test_temp) 
+      {
+        if(timestamp - PIDAT_t2 > 5000) 
+        { 
+          PIDAT_heating = false;
+          PIDAT_PWM_val = (PIDAT_bias - PIDAT_d);
+          PIDAT_t1 = timestamp;
+          PIDAT_t_high = PIDAT_t1 - PIDAT_t2;
+          PIDAT_max = PIDAT_test_temp;
+        }
+      }
+      
+      if(PIDAT_heating == false && PIDAT_input < PIDAT_test_temp) 
+      {
+        if(timestamp - PIDAT_t1 > 5000) 
+        {
+          PIDAT_heating = true;
+          PIDAT_t2 = timestamp;
+          PIDAT_t_low = PIDAT_t2 - PIDAT_t1;
+          
+          if(PIDAT_cycles > 0) 
+          {
+            PIDAT_bias += (PIDAT_d*(PIDAT_t_high - PIDAT_t_low))/(PIDAT_t_low + PIDAT_t_high);
+            PIDAT_bias = constrain(PIDAT_bias, 20 ,HEATER_CURRENT - 20);
+            if(PIDAT_bias > (HEATER_CURRENT/2))
+        PIDAT_d = (HEATER_CURRENT - 1) - PIDAT_bias;
+            else 
+        PIDAT_d = PIDAT_bias;
+
+            usb_printf(" bias: %d  d: %d  min: %d  max: %d \r\n",(int)PIDAT_bias,(int)PIDAT_d,(int)PIDAT_min,(int)PIDAT_max);
+            
+            if(PIDAT_cycles > 2) 
+            {
+              PIDAT_Ku = (4.0*PIDAT_d)/(3.14159*(PIDAT_max-PIDAT_min));
+              PIDAT_Tu = ((float)(PIDAT_t_low + PIDAT_t_high)/1000.0);
+              
+              usb_printf(" Ku: %d  Tu: %d \r\n",(int)PIDAT_Ku,(int)PIDAT_Tu);
+
+            // reference http://en.wikipedia.org/wiki/Ziegler%E2%80%93Nichols_method
+
+              PIDAT_Kp = 0.60*PIDAT_Ku;
+              PIDAT_Ki = 2*PIDAT_Kp/PIDAT_Tu;
+              PIDAT_Kd = PIDAT_Kp*PIDAT_Tu/8;
+
+              printf(" P:%u, I:%u, D:%u\r\n",(unsigned)(PIDAT_Kp*1000),(unsigned)(PIDAT_Ki*1000),(unsigned)(PIDAT_Kd*1000));
+              usb_printf(" Clasic PID \r\n  CFG Kp: %u \r\n  CFG Ki: %u \r\n  CFG Kd: %u \r\n", (unsigned int)(PIDAT_Kp*256),(unsigned int)(PIDAT_Ki*PIDAT_TIME_FACTOR),(unsigned int)(PIDAT_Kd*PIDAT_TIME_FACTOR));
+
+              PIDAT_Kp = 0.33*PIDAT_Ku;
+              PIDAT_Ki = 2*PIDAT_Kp/PIDAT_Tu;
+              PIDAT_Kd = PIDAT_Kp*PIDAT_Tu/3;
+
+              usb_printf(" Some overshoot \r\n  CFG Kp: %u \r\n  CFG Ki: %u \r\n  CFG Kd: %u \r\n",(unsigned int)(PIDAT_Kp*256),(unsigned int)(PIDAT_Ki*PIDAT_TIME_FACTOR),(unsigned int)(PIDAT_Kd*PIDAT_TIME_FACTOR));
+
+              PIDAT_Kp = 0.20*PIDAT_Ku;
+              PIDAT_Ki = 2*PIDAT_Kp/PIDAT_Tu;
+              PIDAT_Kd = PIDAT_Kp*PIDAT_Tu/3;
+
+              usb_printf(" No overshoot \r\n  CFG Kp: %u \r\n  CFG Ki: %u \r\n  CFG Kd: %u \r\n",(unsigned int)(PIDAT_Kp*256),(unsigned int)(PIDAT_Ki*PIDAT_TIME_FACTOR),(unsigned int)(PIDAT_Kd*PIDAT_TIME_FACTOR));
+
+            }
+          }
+          PIDAT_PWM_val = (PIDAT_bias + PIDAT_d);
+          PIDAT_cycles++;
+          PIDAT_min = PIDAT_test_temp;
+        }
+      } 
+      
+    constrain(PIDAT_PWM_val, 0, HEATER_CURRENT);
+    hotend->pwm = (unsigned char)PIDAT_PWM_val;
+    }
+
+    if((PIDAT_input > (PIDAT_test_temp + 55)) || (PIDAT_input > 255))
+    {
+      usb_printf("PID Autotune failed! Temperature to high \r\n");
+      hotend->target_temp = 0;
+      hotend->pwm = 0;
+      autotune_active = false;
+      return;
+    }
+    
+    if(timestamp - PIDAT_temp_millis > 2000) 
+    {
+      PIDAT_temp_millis = timestamp;
+      usb_printf("ok T: %u  @:%u \r\n",(unsigned char)PIDAT_input,(unsigned char)PIDAT_PWM_val);       
+    }
+    
+    if(((timestamp - PIDAT_t1) + (timestamp - PIDAT_t2)) > (10L*60L*1000L*2L)) 
+    {
+      usb_printf("PID Autotune failed! timeout \r\n");
+      hotend->target_temp = 0;
+      hotend->pwm = 0;
+      autotune_active = false;
+      return;
+    }
+    
+    if(PIDAT_cycles > 5) 
+    {
+      usb_printf("PID Autotune finished! Set new values with M301 \r\n");
+      hotend->target_temp = 0;
+      hotend->pwm = 0;
+	    autotune_active = false;
+      return;
+    }
+  }
+}
+//---------------- END AUTOTUNE PID ------------------------------
+

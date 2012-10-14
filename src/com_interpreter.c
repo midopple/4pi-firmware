@@ -79,6 +79,10 @@
 
 // M400 - Finish all moves
 
+// M350 - Set microstepping steps (M350 X16 Y16 Z16 E16 B16)
+// M906 - Set motor current (mV) (M906 X1000 Y1000 Z1000 E1000 B1000) or set all (M906 S1000)
+// M907 - Set motor current (raw) (M907 X128 Y128 Z128 E128 B128) or set all (M907 S128)
+
 // M500 - stores paramters in EEPROM
 // M501 - reads parameters from EEPROM (if you need to reset them after you changed them temporarily).
 // M502 - reverts to the default "factory settings". You still need to store them in EEPROM afterwards if you want to.
@@ -96,6 +100,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "parameters.h"
 #include "init_configuration.h"
 #include "serial.h"
 #include "samadc.h"
@@ -103,6 +108,7 @@
 #include "heaters.h"
 #include "planner.h"
 #include "stepper_control.h"
+#include "motoropts.h"
 
 
 extern void motor_enaxis(unsigned char axis, unsigned char en);
@@ -175,7 +181,7 @@ unsigned char get_byte_from_UART(unsigned char *zeichen)
 void ClearToSend()
 {
 	previous_millis_cmd = timestamp;
-	usb_printf("ok\r\n");
+	usb_printf("\r\nok ");
 }
 
 //-----------------------------------------------------
@@ -184,7 +190,7 @@ void ClearToSend()
 void FlushSerialRequestResend()
 {
 	uart_rd_pointer = uart_wr_pointer;
-	usb_printf("Resend:%u ok\r\n",gcode_LastN + 1);
+	usb_printf("Resend:%u \r\nok ",gcode_LastN + 1);
 }
 
 //-----------------------------------------------------
@@ -438,9 +444,9 @@ void process_commands()
         break;
       case 105: // M105
 		  	if(tmp_extruder < MAX_EXTRUDER)
-				usb_printf("ok T:%u @%u B:%u\r\n",heaters[tmp_extruder].akt_temp,heaters[tmp_extruder].pwm,bed_heater.akt_temp);
+				usb_printf("T:%u @%u B:%u\r\nok ",heaters[tmp_extruder].akt_temp,heaters[tmp_extruder].pwm,bed_heater.akt_temp);
 			else
-				usb_printf("ok T:%u @%u B:%u\r\n",heaters[0].akt_temp,heaters[0].pwm,bed_heater.akt_temp);
+				usb_printf("T:%u @%u B:%u\r\nok ",heaters[0].akt_temp,heaters[0].pwm,bed_heater.akt_temp);
         return;
         //break;
       case 109: // M109 - Wait for extruder heater to reach target.
@@ -468,7 +474,7 @@ void process_commands()
 		#endif
 				if( (timestamp - codenum) > 1000 ) //Print Temp Reading every 1 second while heating up/cooling down
 				{
-					usb_printf("ok T:%u\r\n",heaters[tmp_extruder].akt_temp);
+					usb_printf("T:%u\r\nok ",heaters[tmp_extruder].akt_temp);
 					codenum = timestamp;
 				}
 				#ifdef TEMP_RESIDENCY_TIME
@@ -545,20 +551,20 @@ void process_commands()
         {
           if(code_seen(axis_codes[cnt_c])) 
           {
-            axis_steps_per_unit[cnt_c] = code_value();
-            axis_steps_per_sqr_second[cnt_c] = max_acceleration_units_per_sq_second[cnt_c] * axis_steps_per_unit[cnt_c];
+            pa.axis_steps_per_unit[cnt_c] = code_value();
+            axis_steps_per_sqr_second[cnt_c] = pa.max_acceleration_units_per_sq_second[cnt_c] * pa.axis_steps_per_unit[cnt_c];
           }
         }
         break;
       case 93: // M93 show current axis steps.
-		usb_printf("ok X:%d Y:%d Z:%d E:%d\r\n",(int)axis_steps_per_unit[0],(int)axis_steps_per_unit[1],(int)axis_steps_per_unit[2],(int)axis_steps_per_unit[3]);
-		//printf("ok X:%d Y:%d Z:%d E:%d\r\n",(int)axis_steps_per_unit[0],(int)axis_steps_per_unit[1],(int)axis_steps_per_unit[2],(int)axis_steps_per_unit[3]);
+		usb_printf("X:%d Y:%d Z:%d E:%d",(int)pa.axis_steps_per_unit[0],(int)pa.axis_steps_per_unit[1],(int)pa.axis_steps_per_unit[2],(int)pa.axis_steps_per_unit[3]);
+		//printf("X:%d Y:%d Z:%d E:%d\r\n",(int)pa.axis_steps_per_unit[0],(int)pa.axis_steps_per_unit[1],(int)pa.axis_steps_per_unit[2],(int)pa.axis_steps_per_unit[3]);
         break;
 	  case 114: // M114 Display current position
-		usb_printf("X:%d Y:%d Z:%d E:%d\r\n",(int)current_position[0],(int)current_position[1],(int)current_position[2],(int)current_position[3]);
+		usb_printf("X:%d Y:%d Z:%d E:%d",(int)current_position[0],(int)current_position[1],(int)current_position[2],(int)current_position[3]);
         break;
       case 115: // M115
-        usb_printf("FIRMWARE_NAME: Sprinter 4pi PROTOCOL_VERSION:1.0 MACHINE_TYPE:Prusa EXTRUDER_COUNT:%d\r\n",MAX_EXTRUDER);
+        usb_printf("FIRMWARE_NAME: Sprinter 4pi PROTOCOL_VERSION:1.0 MACHINE_TYPE:Prusa EXTRUDER_COUNT:%d",MAX_EXTRUDER);
         break;
 	  case 119: // M119 show endstop state
 		#if (X_MIN_ACTIV > -1)
@@ -588,15 +594,15 @@ void process_commands()
         {
           if(code_seen(axis_codes[cnt_c]))
           {
-            max_acceleration_units_per_sq_second[cnt_c] = code_value();
-            axis_steps_per_sqr_second[cnt_c] = code_value() * axis_steps_per_unit[cnt_c];
+            pa.max_acceleration_units_per_sq_second[cnt_c] = code_value();
+            axis_steps_per_sqr_second[cnt_c] = code_value() * pa.axis_steps_per_unit[cnt_c];
           }
         }
         break;
       case 202: // M202 max feedrate mm/sec
         for(cnt_c=0; cnt_c < NUM_AXIS; cnt_c++) 
         {
-          if(code_seen(axis_codes[cnt_c])) max_feedrate[cnt_c] = code_value();
+          if(code_seen(axis_codes[cnt_c])) pa.max_feedrate[cnt_c] = code_value();
         }
       break;
       case 203: // M203 Temperature monitor
@@ -604,21 +610,21 @@ void process_commands()
           //if(manage_monitor==100) manage_monitor=1; // Set 100 to heated bed
       break;
       case 204: // M204 acceleration S normal moves T filmanent only moves
-          if(code_seen('S')) move_acceleration = code_value() ;
-          if(code_seen('T')) retract_acceleration = code_value() ;
+          if(code_seen('S')) pa.move_acceleration = code_value() ;
+          if(code_seen('T')) pa.retract_acceleration = code_value() ;
       break;
       case 205: //M205 advanced settings:  minimum travel speed S=while printing T=travel only,  B=minimum segment time X= maximum xy jerk, Z=maximum Z jerk, E= max E jerk
-        if(code_seen('S')) minimumfeedrate = code_value();
-        if(code_seen('T')) mintravelfeedrate = code_value();
+        if(code_seen('S')) pa.minimumfeedrate = code_value();
+        if(code_seen('T')) pa.mintravelfeedrate = code_value();
       //if(code_seen('B')) minsegmenttime = code_value() ;
-        if(code_seen('X')) max_xy_jerk = code_value() ;
-        if(code_seen('Z')) max_z_jerk = code_value() ;
-        if(code_seen('E')) max_e_jerk = code_value() ;
+        if(code_seen('X')) pa.max_xy_jerk = code_value() ;
+        if(code_seen('Z')) pa.max_z_jerk = code_value() ;
+        if(code_seen('E')) pa.max_e_jerk = code_value() ;
       break;
       case 206: // M206 additional homing offset
         if(code_seen('D'))
         {
-          usb_printf("Addhome X:%g Y:%g Z:%g\r\n",add_homing[0],add_homing[1],add_homing[2]);
+          usb_printf("Addhome X:%g Y:%g Z:%g",add_homing[0],add_homing[1],add_homing[2]);
         }
 
         for(cnt_c=0; cnt_c < 3; cnt_c++) 
@@ -649,9 +655,9 @@ void process_commands()
       {
         if(tmp_extruder < MAX_EXTRUDER)
 		{
-			if(code_seen('P')) heaters[tmp_extruder].PID_Kp = code_value();
-			if(code_seen('I')) heaters[tmp_extruder].PID_I = code_value();
-			if(code_seen('D')) heaters[tmp_extruder].PID_Kd = code_value();
+			if(code_seen('P')) heaters[tmp_extruder].PID_Kp = pa.heater_pTerm[tmp_extruder] = code_value();
+			if(code_seen('I')) heaters[tmp_extruder].PID_I  = pa.heater_iTerm[tmp_extruder] = code_value();
+			if(code_seen('D')) heaters[tmp_extruder].PID_Kd = pa.heater_dTerm[tmp_extruder] = code_value();
 			heaters[tmp_extruder].temp_iState_max = (256L * PID_INTEGRAL_DRIVE_MAX) / (int)heaters[tmp_extruder].PID_I;
 			heaters[tmp_extruder].temp_iState_min = heaters[tmp_extruder].temp_iState_max * (-1);
 		}
@@ -659,14 +665,104 @@ void process_commands()
       break;
       case 303: // M303 PID autotune
       {
-        //float help_temp = 150.0;
-        //if (code_seen('S')) help_temp=code_value();
-        //PID_autotune(help_temp);
+        if(tmp_extruder < MAX_EXTRUDER)
+		    {
+          float help_temp = 150.0;
+          if (code_seen('S')) help_temp=code_value();
+          PID_autotune(&heaters[tmp_extruder], help_temp);
+        }
       }
       break;
       case 400: // M400 finish all moves
       {
       	st_synchronize();	
+      }
+      break;
+	  case 350: // Set microstepping mode (1=full step, 2=1/2 step, 4=1/4 step, 16=1/16 step).
+	            //Warning: Steps per unit remains unchanged. 
+                // M350 X[value] Y[value] Z[value] E[value] B[value] 
+                // M350 S[value] set all motors
+	  {
+		  for(cnt_c=0; cnt_c < NUM_AXIS; cnt_c++) 
+		  {
+			if(code_seen(axis_codes[cnt_c])) 
+			{
+			  pa.axis_ustep[cnt_c] = microstep_mode(code_value());
+			  motor_setopts(cnt_c,pa.axis_ustep[cnt_c],pa.axis_current[cnt_c]);
+			}
+		  }
+		  if(code_seen('B'))
+		  {
+		    pa.axis_ustep[4] = microstep_mode(code_value());
+			motor_setopts(cnt_c,pa.axis_ustep[cnt_c],pa.axis_current[cnt_c]);
+		  }
+		  if(code_seen('S'))
+		  {
+		    for(cnt_c=0; cnt_c<5; cnt_c++)
+			{
+			  pa.axis_ustep[cnt_c] = microstep_mode(code_value());
+			  motor_setopts(cnt_c,pa.axis_ustep[cnt_c],pa.axis_current[cnt_c]);
+		    }
+		  }
+	  }
+	  break;
+      case 906: // set motor current value in mA using axis codes
+                // M906 X[mA] Y[mA] Z[mA] E[mA] B[mA] 
+                // M906 S[mA] set all motors current 
+      {
+        unsigned int current;
+		
+		  for(cnt_c=0; cnt_c < NUM_AXIS; cnt_c++) 
+		  {
+			if(code_seen(axis_codes[cnt_c])) 
+			{
+			  current = constrain(code_value(),0,1900);
+			  pa.axis_current[cnt_c] = (current*100)/743;
+			  motor_setopts(cnt_c,pa.axis_ustep[cnt_c],pa.axis_current[cnt_c]);
+			}
+		  }
+		  if(code_seen('B'))
+		  {
+			current = constrain(code_value(),0,1900);
+		    pa.axis_current[4] = (current*100)/743;
+			motor_setopts(cnt_c,pa.axis_ustep[cnt_c],pa.axis_current[cnt_c]);
+		  }
+		  if(code_seen('S'))
+		  {
+		    for(cnt_c=0; cnt_c<5; cnt_c++)
+			{
+			  current = constrain(code_value(),0,1900);
+			  pa.axis_current[cnt_c] = (current*100)/743;
+			  motor_setopts(cnt_c,pa.axis_ustep[cnt_c],pa.axis_current[cnt_c]);
+		    }
+		  }
+      }
+      break;	  
+      case 907: // set motor current value (0-255) using axis codes
+                // M907 X[value] Y[value] Z[value] E[value] B[value] 
+                // M907 S[value] set all motors current 
+      {
+		  for(cnt_c=0; cnt_c < NUM_AXIS; cnt_c++) 
+		  {
+			if(code_seen(axis_codes[cnt_c])) 
+			{
+			  pa.axis_current[cnt_c] = code_value();
+			  motor_setopts(cnt_c,pa.axis_ustep[cnt_c],pa.axis_current[cnt_c]);
+			}
+		  }
+		  if(code_seen('B'))
+		  {
+		    pa.axis_current[4] = code_value();
+			motor_setopts(cnt_c,pa.axis_ustep[cnt_c],pa.axis_current[cnt_c]);
+		  }
+		  if(code_seen('S'))
+		  {
+		    for(cnt_c=0; cnt_c<5; cnt_c++)
+			{
+			  pa.axis_current[cnt_c] = code_value();
+			  motor_setopts(cnt_c,pa.axis_ustep[cnt_c],pa.axis_current[cnt_c]);
+		    }
+		  }
       }
       break;	  
 
@@ -683,17 +779,17 @@ void process_commands()
     if(tmp_extruder >= MAX_EXTRUDER) 
 	{
 		//No more extruder
-		usb_printf("Only 2 Extruder possible\r\n");
+		usb_printf("Only 2 Extruder possible");
     }
     else 
 	{
 		active_extruder = tmp_extruder;
-		usb_printf("T%d\r\n",active_extruder);
+		usb_printf("T%d",active_extruder);
     }
   }
   else
   {
-       usb_printf("Unknown command: %s \r\n",cmdbuffer[bufindr]);
+       usb_printf("Unknown command: %s ",cmdbuffer[bufindr]);
   }
   
   ClearToSend();

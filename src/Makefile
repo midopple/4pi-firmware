@@ -154,6 +154,7 @@ C_OBJECTS += USBInterfaceRequest.o
 C_OBJECTS += USBGenericRequest.o
 C_OBJECTS += USBGetDescriptorRequest.o
 C_OBJECTS += USBSetConfigurationRequest.o
+C_OBJECTS += util.o
 C_OBJECTS += stdio.o
 C_OBJECTS += systick.o
 C_OBJECTS += serial.o
@@ -180,6 +181,8 @@ C_OBJECTS += heaters.o
 C_OBJECTS += arc_func.o
 C_OBJECTS += planner.o
 C_OBJECTS += stepper_control.o
+C_OBJECTS += parameters.o
+
 
 
 

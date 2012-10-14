@@ -92,6 +92,7 @@ signed short analog2temp_thermistor_table(signed short raw,const short table[][2
 void manage_heaters(void);
 void init_heaters_values(void);
 void heater_switch(unsigned char heater, unsigned char en);
+void LED_switch(unsigned char led, unsigned char en);
 //void heater_soft_pwm(void);
 
 
@@ -136,3 +137,6 @@ extern signed short target_hotend1;
 
 extern heater_struct heaters[];
 extern heater_bed_struct bed_heater;
+
+void PID_autotune(heater_struct *hotend, float PIDAT_test_temp);
+

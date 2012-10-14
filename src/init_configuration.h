@@ -39,6 +39,8 @@
 // X, Y, Z, E steps per unit
 #define _AXIS_STEP_PER_UNIT {80, 80, 3200/1.25,700}
 
+#define _AXIS_CURRENT {128, 128, 128, 128, 128}
+#define _AXIS_USTEP {3, 3, 3, 3, 3}
 
 //-----------------------------------------------------------------------
 //// Endstop Settings
@@ -73,10 +75,10 @@
 // Disables axis when it's not being used.
 //-----------------------------------------------------------------------
 
-#define _DISABLE_X 	false
-#define _DISABLE_Y 	false
-#define _DISABLE_Z 	true
-#define _DISABLE_E 	false
+#define _DISABLE_X_EN 	false
+#define _DISABLE_Y_EN 	false
+#define _DISABLE_Z_EN 	true
+#define _DISABLE_E_EN 	false
 
 //-----------------------------------------------------------------------
 // Inverting axis direction
