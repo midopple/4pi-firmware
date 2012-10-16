@@ -118,6 +118,9 @@ typedef struct {
 	
 	signed short thermistor_type;
 	
+	signed short slope;
+	signed short intercept;
+	signed short max_pwm;
 
 } heater_struct;
 
@@ -139,4 +142,5 @@ extern heater_struct heaters[];
 extern heater_bed_struct bed_heater;
 
 void PID_autotune(heater_struct *hotend, float PIDAT_test_temp);
+void Heater_Eval(heater_struct *hotend, unsigned int step);
 

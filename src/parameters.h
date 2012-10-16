@@ -17,6 +17,8 @@
  
  #define NUM_AXIS 4
  #define MAX_EXTRUDER 2
+ 
+ #define FLASH_VERSION "F01" 
   
  
  typedef struct {
@@ -40,6 +42,30 @@
 	//Software Endstops YES / NO
 	unsigned char min_software_endstops;
 	unsigned char max_software_endstops;
+	
+	//Homing direction
+	signed short x_home_dir;
+	signed short y_home_dir;
+	signed short z_home_dir;
+	
+	//Invert endstop signal
+	volatile unsigned char x_endstop_invert;
+	volatile unsigned char y_endstop_invert;
+	volatile unsigned char z_endstop_invert;
+	
+	//Digital Input for Endstop switch aktiv
+	volatile signed short x_min_endstop_aktiv;
+	volatile signed short x_max_endstop_aktiv;
+	volatile signed short y_min_endstop_aktiv;
+	volatile signed short y_max_endstop_aktiv;
+	volatile signed short z_min_endstop_aktiv;
+	volatile signed short z_max_endstop_aktiv;
+	
+	//Invert axis direction 
+	volatile unsigned char invert_x_dir;
+	volatile unsigned char invert_y_dir;
+	volatile unsigned char invert_z_dir;
+	volatile unsigned char invert_e_dir;
 	
 	//maximum Printing area
 	signed short x_max_length;
@@ -68,14 +94,19 @@
 	signed short heater_iTerm[MAX_EXTRUDER];
 	signed short heater_dTerm[MAX_EXTRUDER];
 	
+	signed short heater_slope[MAX_EXTRUDER]; 
+	signed short heater_intercept[MAX_EXTRUDER];
+	signed short heater_max_pwm[MAX_EXTRUDER];
  
-  
 } parameter_struct;
 
 
 extern parameter_struct pa;
 
 void init_parameters(void);
+void FLASH_StoreSettings(void);
+void FLASH_PrintSettings(void);
+void FLASH_LoadSettings(void);
 
 
 
