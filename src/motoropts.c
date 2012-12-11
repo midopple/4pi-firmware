@@ -78,6 +78,22 @@ void AD5206_setup(){
     
 }
 
+
+//convert digipot count to mA
+unsigned int count_ma(unsigned char count)
+{
+	unsigned int ma = count*743/100;
+	return ma;
+}
+
+//convert mA to digipot count
+unsigned char ma_count(unsigned int ma)
+{
+	unsigned int count = ma*100/743;
+	return (unsigned char)count;
+}
+
+
 unsigned char microstep_mode(unsigned char usteps){
 	unsigned char mode;
 
@@ -100,6 +116,14 @@ unsigned char microstep_mode(unsigned char usteps){
 	}
 	return(mode);
 }
+
+//convert microstep mode to usteps
+unsigned char microstep_usteps(unsigned char mode)
+{
+	const unsigned char usteps[] = { 1,2,4,16 };
+	return usteps[mode];
+}
+
 
 	
 void motor_setopts(unsigned char axis, unsigned char ustepbits, unsigned char current){
@@ -152,7 +176,7 @@ void motor_setopts(unsigned char axis, unsigned char ustepbits, unsigned char cu
     }
     AD5206_setchan(channel,current);
 
-	printf("Setting channel %u to current value %u and ustep value %u\r\n",channel, current, ustepbits);
+	//printf("Setting channel %u to current value %u and ustep value %u\r\n",channel, current, ustepbits);
 	
 }
 

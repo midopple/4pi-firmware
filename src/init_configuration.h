@@ -4,7 +4,7 @@
 // BASIC SETTINGS for the first start, settings can change with G-Code commands
 
 #define false 0
-#define true 1
+#define true !false
 
 // NO SENSOR
 // 0 no Sensor is used
@@ -37,9 +37,9 @@
 //// Calibration variables
 //-----------------------------------------------------------------------
 // X, Y, Z, E steps per unit
-#define _AXIS_STEP_PER_UNIT {80, 80, 3200/1.25,700}
+#define _AXIS_STEP_PER_UNIT {80, 80, 3200/1.25,765}
 
-#define _AXIS_CURRENT {128, 128, 128, 128, 128}
+#define _AXIS_CURRENT {40, 128, 128, 128, 128}
 #define _AXIS_USTEP {3, 3, 3, 3, 3}
 
 //-----------------------------------------------------------------------
@@ -83,7 +83,7 @@
 //-----------------------------------------------------------------------
 // Inverting axis direction
 //-----------------------------------------------------------------------
-#define _INVERT_X_DIR 	false
+#define _INVERT_X_DIR 	true
 #define _INVERT_Y_DIR 	false
 #define _INVERT_Z_DIR 	true
 #define _INVERT_E_DIR 	false
@@ -99,9 +99,9 @@
 //-----------------------------------------------------------------------
 //Max Length for Prusa Mendel, check the ways of your axis and set this Values
 //-----------------------------------------------------------------------
-#define _X_MAX_LENGTH	200
-#define _Y_MAX_LENGTH 	200
-#define _Z_MAX_LENGTH 	100
+#define _X_MAX_LENGTH	180
+#define _Y_MAX_LENGTH 	180
+#define _Z_MAX_LENGTH 	80
 
 //-----------------------------------------------------------------------
 //// MOVEMENT SETTINGS
@@ -115,12 +115,12 @@
 //// Acceleration settings
 //-----------------------------------------------------------------------
 // X, Y, Z, E maximum start speed for accelerated moves. E default values are good for skeinforge 40+, for older versions raise them a lot.
-#define _ACCELERATION 1000         // Axis Normal acceleration mm/s^2
+#define _ACCELERATION 600         // Axis Normal acceleration mm/s^2
 #define _RETRACT_ACCELERATION 2000 // Extruder Normal acceleration mm/s^2
 #define _MAX_XY_JERK 20.0
 #define _MAX_Z_JERK 0.4
 #define _MAX_E_JERK 5.0
-#define _MAX_ACCELERATION_UNITS_PER_SQ_SECOND {1000,1000,50,5000}    // X, Y, Z and E max acceleration in mm/s^2 for printing moves or retracts
+#define _MAX_ACCELERATION_UNITS_PER_SQ_SECOND {2000,5000,50,5000}    // X, Y, Z and E max acceleration in mm/s^2 for printing moves or retracts
 
 //For the retract (negative Extruder) move this maxiumum Limit of Feedrate is used
 //The next positive Extruder move use also this Limit, 
@@ -151,20 +151,35 @@
 //-----------------------------------------------------------------------
 //// HEATERCONTROL AND PID PARAMETERS
 //-----------------------------------------------------------------------
+/*
+Clasic PID
+  CFG Kp: 2035
+  CFG Ki: 31
+  CFG Kd: 2055
+ Some overshoot
+  CFG Kp: 1119
+  CFG Ki: 17
+  CFG Kd: 3015
+ No overshoot
+  CFG Kp: 678
+  CFG Ki: 10
+  CFG Kd: 1827
+ */
+
 
 #define PIDTEMP 1
 #ifdef PIDTEMP
 
 	//PID Controler Settings
 	#define PID_INTEGRAL_DRIVE_MAX 80 // too big, and heater will lag after changing temperature, too small and it might not compensate enough for long-term errors
-	#define PID_PGAIN 2560 //256 is 1.0  // value of X means that error of 1 degree is changing PWM duty by X, probably no need to go over 25
-	#define PID_IGAIN 64 //256 is 1.0  // value of X (e.g 0.25) means that each degree error over 1 sec (2 measurements) changes duty cycle by 2X (=0.5) units (verify?)
-	#define PID_DGAIN 4096 //256 is 1.0  // value of X means that around reached setpoint, each degree change over one measurement (half second) adjusts PWM by X units to compensate
+	#define PID_PGAIN 1119 //256 is 1.0  // value of X means that error of 1 degree is changing PWM duty by X, probably no need to go over 25
+	#define PID_IGAIN 17 //256 is 1.0  // value of X (e.g 0.25) means that each degree error over 1 sec (2 measurements) changes duty cycle by 2X (=0.5) units (verify?)
+	#define PID_DGAIN 3015 //256 is 1.0  // value of X means that around reached setpoint, each degree change over one measurement (half second) adjusts PWM by X units to compensate
 
 	// magic formula 1, to get approximate "zero error" PWM duty. Take few measurements with low PWM duty and make linear fit to get the formula
 	// for my makergear hot-end: linear fit {50,10},{60,20},{80,30},{105,50},{176,100},{128,64},{208,128}
-  #define HEATER_0_SLOPE 87
-  #define HEATER_0_INTERCEPT -3
+  #define HEATER_0_SLOPE 112
+  #define HEATER_0_INTERCEPT -10
   #define HEATER_1_SLOPE 24  // slope * 256
   #define HEATER_1_INTERCEPT -2
 //	#define HEATER_DUTY_FOR_SETPOINT(setpoint) ((int)((HEATER_SLOPE*(long)setpoint)>>8)+HEATER_INTERCEPT)  

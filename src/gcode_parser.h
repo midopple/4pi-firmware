@@ -1,4 +1,5 @@
 /*
+ G-Code Interpreter
  
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -11,22 +12,23 @@
  GNU General Public License for more details.
  
  You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>. 
- */
+ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+#ifndef GCODE_PARSER_H_4G4XUC96
+#define GCODE_PARSER_H_4G4XUC96
+
+#include <inttypes.h>
+
+typedef void (*ReplyFunction)(const char* format,...);
+
+void gcode_init(ReplyFunction replyFunc);
+void gcode_update();
+
+int32_t get_int(char chr);
+uint32_t get_uint(char chr);
+float get_float(char chr);
+const char* get_str(char chr);
+int has_code(char chr);
 
 
-
-void motor_enaxis(unsigned char axis, unsigned char en);
-void motor_setdir(unsigned char axis, unsigned char dir);
-void motor_step(unsigned char axis);
-void motor_unstep();
-
-unsigned int count_ma(unsigned char count);
-unsigned char ma_count(unsigned int ma);
-unsigned char microstep_mode(unsigned char usteps);
-unsigned char microstep_usteps(unsigned char mode);
-void motor_setopts(unsigned char axis, unsigned char ustepbits, unsigned char current);
-void motor_setup();
-
- 
-
+#endif /* end of include guard: GCODE_PARSER_H_4G4XUC96 */

@@ -13,9 +13,11 @@
 #include "parameters.h"
 #include "serial.h"
 #include "samadc.h"
-#include "com_interpreter.h"
 #include "stepper_control.h"
 #include "planner.h"
+#include "gcode_parser.h"
+#include "sdcard.h"
+#include "LCD_4x20.h"
 //#include "heaters.h"
 
 
@@ -52,6 +54,7 @@ extern void samserial_setcallback(void (*c)(unsigned char));
 //--------------------------
 /// Global timestamp in milliseconds since start of application.
 volatile unsigned long timestamp = 1;
+
   
 //----------------------------------------------------------
 //SYSTICK --> INTERRUPT call every 1ms 
@@ -75,15 +78,7 @@ void SysTick_Handler(void)
 	//{
 	//  for(i=1;i<9;i++)
     //  	printf("Channel %u : %u mV\n", i,adc_read(i));
-    //}
-
-    
-    if(timestamp%5==0) //every 5 ms
-    {
-		if(buflen < (BUFSIZE-1))
-			get_command();
-    }
-	
+    //	
 	
 	if(timestamp%250==0) //every 100 ms
     {
@@ -91,14 +86,24 @@ void SysTick_Handler(void)
     }
 	    
 }
-
+unsigned long oldtimestamp=1;
+void do_periodic()
+{
+	if (timestamp==oldtimestamp)
+		return;
+	oldtimestamp=timestamp;
+	if (timestamp % 500 == 0)
+	{
+		sdcard_handle_state();
+	}
+	
+}
 
 
 int main()
 {
 	
     TRACE_CONFIGURE(DBGU_STANDARD, 115200, BOARD_MCK);
-    printf("-- USB Device CDC Serial Project %s --\n\r", SOFTPACK_VERSION);
     printf("-- %s\n\r", BOARD_NAME);
     printf("-- Compiled: %s %s --\n\r", __DATE__, __TIME__);
 
@@ -120,10 +125,6 @@ int main()
 	//-------- Init ADC without Autostart --------------
 	printf("Init ADC\n\r");
     initadc(0);
-	
-	//-------- On USB recived byte call this function --------------
-	printf("Init Callback for USB\n\r");
-    samserial_setcallback(&usb_characterhandler);
 	
 	//-------- Init Motor driver --------------
 	printf("Init Motors\n\r");
@@ -154,6 +155,16 @@ int main()
 	printf("Plan Init\n\r");
 	plan_init();
 	
+	//-------- Init G-Code Parser Values --------------
+	printf("G-Code parser init\n\r");
+	gcode_init(usb_printf);
+	
+	//-------- Init LCD DISPLAY --------------
+	printf("LCD init\n\r");
+	lcd_init();
+	
+	//-------- Check for SD card presence -------
+//	sdcard_handle_state();
 	
 	//motor_enaxis(0,1);
     //motor_enaxis(1,1);
@@ -161,7 +172,14 @@ int main()
 	{
   		//uncomment to use//sprinter_mainloop();
     	//main loop events go here
-    	
+
+		do_periodic();
+
+		gcode_update();
+/*    	
+		if(buflen < (BUFSIZE-1))
+			get_command();
+
     	if(buflen > 0)
 		{
 			
@@ -174,7 +192,7 @@ int main()
 			if(bufindr == BUFSIZE) bufindr = 0;
 			
 		}
-		  
+*/		  
     }
 }
 
